@@ -1,0 +1,24 @@
+use crate::public::utils::format_base_url;
+use reqwest::Url;
+
+#[derive(Eq, Hash, PartialEq, Clone)]
+pub struct ClientKey {
+    base_url: Url,
+    username: String,
+}
+
+impl ClientKey {
+    pub fn new(base_url: &str, username: &str) -> Result<Self, String> {
+        let base_url = format_base_url(base_url)?;
+        let username = username.to_string();
+        Ok(Self { base_url, username })
+    }
+
+    pub fn get_base_url(&self) -> Url {
+        self.base_url.to_owned()
+    }
+
+    pub fn get_username(&self) -> String {
+        self.username.to_owned()
+    }
+}
