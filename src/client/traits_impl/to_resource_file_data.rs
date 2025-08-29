@@ -1,26 +1,11 @@
 use crate::client::structs::raw_file_xml::{
     CurrentUserPrivilegeSet, MultiStatus, Prop, PropStat, Response,
 };
-use crate::resources_file::traits::to_resource_file_data::ToResourceFileData;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
-use reqwest::{Client, Url};
-use crate::resources_file::structs::resources_file::ResourcesFile;
-
-/**
-pub struct ResourcesFile {
-    pub relative_root_path: String, // 文件的相对路径（相对根目录）
-    pub absolute_path: String,      // 文件的完整路径（从 href 拿到）
-    pub name: String,               // 友好化的文件或目录名
-    pub is_dir: bool,               // 是否目录
-    pub size: Option<u64>,          // 文件大小（字节）
-    pub size_str: Option<String>,   // 格式化后的大小，比如 "12.3MB"
-    pub last_modified: Option<DateTime<FixedOffset>>, // 原始时间
-    pub mime: Option<String>,       // MIME 类型
-    pub owner: Option<String>,      // 所有者
-    pub etag: Option<String>,       // 清理后的 ETag
-    pub privileges: Vec<String>,    // 权限列表
-}
-**/
+use crate::resources_file::traits::to_resource_file_data::{
+    ToResourceFileData, ToResourceFileDataError,
+};
+use reqwest::Url;
 
 fn take_ok_propstat(propstats: Vec<PropStat>) -> Option<PropStat> {
     // 从 propstats 中拿到第一个 HTTP 状态是 2xx 的 PropStat（直接 move 出来）
@@ -85,7 +70,7 @@ impl ToResourceFileData for MultiStatus {
     fn to_resource_file_data(
         self,
         base_url: &Url,
-    ) -> Result<Vec<ResourceFileData>, String> {
+    ) -> Result<Vec<ResourceFileData>, ToResourceFileDataError> {
         let mut resources = Vec::new();
 
         let mut iter = self.responses.into_iter();

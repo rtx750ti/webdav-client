@@ -2,6 +2,48 @@ use crate::client::THttpClientArc;
 use crate::client::structs::client_key::ClientKey;
 use std::sync::Arc;
 
+#[derive(Debug, thiserror::Error)]
+pub enum AddAccountError {
+    #[error("创建Key错误->{0}")]
+    CreateKeyError(String),
+    #[error("创建HTTP客户端错误->{0}")]
+    CreateHttpClientError(String),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum RemoveAccountError {
+    // 客户端未释放
+    #[error("客户端未释放->{0}")]
+    ClientInUse(String),
+    // 客户端删除失败
+    #[error("客户端删除失败->{0}")]
+    DeleteFailed(String),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum RemoveAccountForceError {
+    #[error("强制删除失败->{0}")]
+    RemoveError(String),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum GetHttpClientError {
+    #[error("查找失败->{0}")]
+    NotFindClient(String),
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum AccountError {
+    #[error("[add_account] 新增账号函数出错->{0}")]
+    AddAccountError(#[from] AddAccountError),
+    #[error("[remove_account] 删除账号函数出错->{0}")]
+    RemoveAccountError(#[from] RemoveAccountError),
+    #[error("[get_http_client] 强制删除账号函数出错->{0}")]
+    RemoveAccountForceError(#[from] RemoveAccountForceError),
+    #[error("[remove_account_force] 获取HTTP客户端函数出错->{0}")]
+    GetHttpClientError(#[from] GetHttpClientError),
+}
+
 /// 定义账户管理功能的通用接口，
 /// 用于添加、移除和获取 HTTP 客户端实例。
 pub trait Account {
@@ -24,7 +66,7 @@ pub trait Account {
         base_url: &str,
         username: &str,
         password: &str,
-    ) -> Result<ClientKey, String>;
+    ) -> Result<ClientKey, AccountError>;
 
     /// 判断当前客户端实例是否可以被修改（或安全移除）。
     ///
@@ -59,7 +101,10 @@ pub trait Account {
     ///
     /// # 注意
     /// 调用前可配合 [`can_modify_value`] 检查当前实例是否安全移除。
-    fn remove_account(&mut self, key: &ClientKey) -> Result<(), String>;
+    fn remove_account(
+        &mut self,
+        key: &ClientKey,
+    ) -> Result<(), AccountError>;
 
     /// 根据客户端键获取 HTTP 客户端实例。
     ///
@@ -76,7 +121,7 @@ pub trait Account {
     fn get_http_client(
         &self,
         key: &ClientKey,
-    ) -> Result<THttpClientArc, String>;
+    ) -> Result<THttpClientArc, AccountError>;
 
     /// **强制删除**指定账户的客户端实例，不做任何引用计数检查。
     ///
@@ -107,5 +152,8 @@ pub trait Account {
     /// // 强制移除，忽略引用计数
     /// account.remove_account_force(&client_key)?;
     /// ```
-    fn remove_account_force(&mut self, key: &ClientKey) -> Result<(), String>;
+    fn remove_account_force(
+        &mut self,
+        key: &ClientKey,
+    ) -> Result<(), AccountError>;
 }

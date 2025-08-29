@@ -4,7 +4,7 @@ pub struct DownloadConfig {
     pub timeout_secs: u64,         // 超时
     pub max_retries: u32,          // 最大重试次数
     pub abort_handle: AbortHandle, // 停止信号
-    abort_reg: AbortRegistration, // 内部下载循环中使用，跟abort_handle配对使用
+    _abort_reg: AbortRegistration, // 内部下载循环中使用，跟abort_handle配对使用
 }
 
 impl DownloadConfig {
@@ -19,7 +19,7 @@ impl DownloadConfig {
             timeout_secs,
             max_retries,
             abort_handle,
-            abort_reg,
+            _abort_reg: abort_reg,
         }
     }
 }
@@ -32,7 +32,7 @@ impl Default for DownloadConfig {
             timeout_secs: 30, // 默认超时 30 秒
             max_retries: 3,   // 默认最大重试 3 次
             abort_handle,
-            abort_reg,
+            _abort_reg: abort_reg,
         }
     }
 }

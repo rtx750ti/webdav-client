@@ -9,7 +9,9 @@ pub struct ClientKey {
 
 impl ClientKey {
     pub fn new(base_url: &str, username: &str) -> Result<Self, String> {
-        let base_url = format_base_url(base_url)?;
+        let base_url =
+            format_base_url(base_url).map_err(|e| e.to_string())?;
+
         let username = username.to_string();
         Ok(Self { base_url, username })
     }

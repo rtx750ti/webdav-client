@@ -20,7 +20,8 @@ impl HttpClient {
     ) -> Result<Self, String> {
         let encrypted_username = encrypt_str(username);
         let encrypted_password = encrypt_str(password);
-        let base_url = format_base_url(base_url)?;
+        let base_url = format_base_url(base_url)
+            .map_err(|e| e.to_string())?;
         let client = gen_http_client(username, password)
             .unwrap_or(Client::default());
 

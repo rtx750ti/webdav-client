@@ -1,5 +1,20 @@
 use crate::client::structs::client_key::ClientKey;
 
+#[derive(Debug, thiserror::Error)]
+pub enum FormatUrlPathError {
+    #[error("格式化URL时出错->{0}")]
+    FormatError(String),
+    /// 不允许访问上层目录
+    #[error("路径越界，禁止访问上级目录")]
+    ParentDirNotAllowed,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum UrlFormatError {
+    #[error("[format_url_path] 格式化URL路径函数出错->{0}")]
+    FormatUrlPathError(#[from] FormatUrlPathError),
+}
+
 pub trait UrlFormat {
     /// 将用户输入的路径与 WebDAV 基础 URL 安全拼接，返回完整可访问的 URL 字符串。
     ///
@@ -45,5 +60,5 @@ pub trait UrlFormat {
         &self,
         web_dav_child_client_key: &ClientKey,
         path: &str,
-    ) -> Result<String, String>;
+    ) -> Result<String, UrlFormatError>;
 }

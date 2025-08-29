@@ -1,17 +1,25 @@
 use crate::client::WebDavClient;
 use crate::client::structs::client_key::ClientKey;
-use crate::public::traits::url_format::UrlFormat;
+use crate::public::traits::url_format::{
+    FormatUrlPathError, UrlFormat, UrlFormatError,
+};
 
 impl UrlFormat for WebDavClient {
     fn format_url_path(
         &self,
         key: &ClientKey,
         path: &str,
-    ) -> Result<String, String> {
+    ) -> Result<String, UrlFormatError> {
         let base_url = key.get_base_url();
-        let joined_url = base_url.join(path).map_err(|e| e.to_string())?;
+        let joined_url = base_url.join(path).map_err(|e| {
+            UrlFormatError::FormatUrlPathError(
+                FormatUrlPathError::FormatError(e.to_string()),
+            )
+        })?;
 
-        let err = Err("路径越界，禁止访问上级目录".to_string());
+        let err = Err(UrlFormatError::FormatUrlPathError(
+            FormatUrlPathError::ParentDirNotAllowed,
+        ));
 
         if !joined_url.as_str().starts_with(base_url.as_str()) {
             return err;

@@ -1,6 +1,5 @@
 use crate::resources_file::structs::download_config::DownloadConfig;
 use async_trait::async_trait;
-use reqwest::Client;
 use std::sync::Arc;
 
 #[async_trait]

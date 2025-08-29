@@ -2,7 +2,6 @@ use crate::resources_file::structs::download_config::DownloadConfig;
 use crate::resources_file::structs::resources_file::ResourcesFile;
 use crate::resources_file::traits::download::Download;
 use async_trait::async_trait;
-use reqwest::Client;
 use std::sync::Arc;
 
 #[async_trait]
@@ -12,7 +11,9 @@ impl Download for ResourcesFile {
         save_absolute_path: &str,
         download_config: &DownloadConfig,
     ) -> Result<Arc<Self>, String> {
-        let http_client = self.get_http_client();
+        let _ = save_absolute_path;
+        let _ = download_config;
+        let _http_client = self.get_http_client();
         Ok(Arc::new(self))
     }
 
