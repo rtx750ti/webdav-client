@@ -1,18 +1,18 @@
-use crate::client::WebDavClient;
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::raw_file_xml::MultiStatus;
 use crate::client::traits::account::Account;
 use crate::client::traits::folder::Folders;
-use crate::client::traits::to_resources_file::ToResourcesFile;
+use crate::client::{THttpClientArc, WebDavClient};
 use crate::public::enums::depth::Depth;
 use crate::public::enums::methods::WebDavMethod;
 use crate::public::traits::url_format::UrlFormat;
-use crate::resources_file::ResourcesFile;
+use crate::resources_file::structs::resources_file::ResourcesFile;
+use crate::resources_file::traits::to_resource_file_data::ToResourceFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;
 use quick_xml::de::from_str;
-use reqwest::Client;
 use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
+use reqwest::{Client, Url};
 
 const PROPFIND_BODY: &str = r#"<?xml version="1.0" encoding="utf-8" ?>
 <D:propfind xmlns:D="DAV:">
@@ -60,6 +60,41 @@ pub async fn get_folders_with_client(
     Ok(multi_status)
 }
 
+type TResourcesFile = Vec<Vec<ResourcesFile>>;
+
+pub fn handle_result(
+    results: Vec<Result<MultiStatus, String>>,
+    http_client_arc: THttpClientArc,
+    base_url: &Url,
+) -> Result<TResourcesFile, String> {
+    // 这里只做简单收集，具体转换成 ResourcesFile 的逻辑你自己加
+    let mut all_files = Vec::new();
+
+    for res in results {
+        match res {
+            Ok(multi_status) => {
+                let mut resources_files = Vec::new();
+                let resource_data_list =
+                    multi_status.to_resource_file_data(base_url)?;
+
+                for resource_file_data in resource_data_list {
+                    resources_files.push(
+                        resource_file_data.to_resources_file(
+                            http_client_arc.get_client(),
+                        ),
+                    )
+                }
+                all_files.push(resources_files)
+            }
+            Err(e) => {
+                eprintln!("请求失败: {}", e);
+            }
+        }
+    }
+
+    Ok(all_files)
+}
+
 #[async_trait]
 impl Folders for WebDavClient {
     async fn get_folders(
@@ -67,7 +102,7 @@ impl Folders for WebDavClient {
         key: &ClientKey,
         reactive_paths: &Vec<String>,
         depth: &Depth,
-    ) -> Result<Vec<Vec<ResourcesFile>>, String> {
+    ) -> Result<TResourcesFile, String> {
         let http_client_arc = self.get_http_client(key)?;
 
         // 构建所有任务（这里只做并发请求）
@@ -87,20 +122,8 @@ impl Folders for WebDavClient {
         let results: Vec<Result<MultiStatus, String>> =
             join_all(tasks).await;
 
-        // 这里只做简单收集，具体转换成 ResourcesFile 的逻辑你自己加
-        let mut all_files = Vec::new();
-
-        for res in results {
-            match res {
-                Ok(multi_status) => all_files.push(
-                    multi_status
-                        .to_resources_files(&key.get_base_url())?,
-                ),
-                Err(e) => {
-                    eprintln!("请求失败: {}", e);
-                }
-            }
-        }
+        let all_files =
+            handle_result(results, http_client_arc, &key.get_base_url())?;
 
         Ok(all_files)
     }

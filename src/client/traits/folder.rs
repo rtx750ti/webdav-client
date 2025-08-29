@@ -1,6 +1,6 @@
 use crate::client::structs::client_key::ClientKey;
 use crate::public::enums::depth::Depth;
-use crate::resources_file::ResourcesFile;
+use crate::resources_file::structs::resources_file::ResourcesFile;
 use async_trait::async_trait;
 
 #[async_trait]
