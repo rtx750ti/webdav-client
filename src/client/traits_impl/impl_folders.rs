@@ -1,64 +1,16 @@
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::raw_file_xml::MultiStatus;
 use crate::client::traits::account::Account;
-use crate::client::traits::folder::{Folders, GetFoldersError};
+use crate::client::traits::folder::Folders;
 use crate::client::{THttpClientArc, WebDavClient};
 use crate::public::enums::depth::Depth;
-use crate::public::enums::methods::WebDavMethod;
 use crate::public::traits::url_format::UrlFormat;
 use crate::resources_file::structs::resources_file::ResourcesFile;
 use crate::resources_file::traits::to_resource_file_data::ToResourceFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;
-use quick_xml::de::from_str;
-use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
-use reqwest::{Client, Url};
-
-const PROPFIND_BODY: &str = r#"<?xml version="1.0" encoding="utf-8" ?>
-<D:propfind xmlns:D="DAV:">
-  <D:allprop/>
-</D:propfind>"#;
-
-pub async fn get_folders_with_client(
-    http_client: Client,
-    absolute_url: &str,
-    depth: &Depth,
-) -> Result<MultiStatus, GetFoldersError> {
-    // 组装请求头
-    let mut headers = HeaderMap::new();
-    headers
-        .insert(CONTENT_TYPE, HeaderValue::from_static("application/xml"));
-    headers.insert("Depth", HeaderValue::from_static(depth.as_str()));
-    headers.insert("Accept", HeaderValue::from_static("application/xml"));
-
-    let method = WebDavMethod::PROPFIND
-        .to_head_method()
-        .map_err(|e| GetFoldersError::ToHeadMethodError(e))?;
-
-    // 发送 PROPFIND 到基准目录（已保证有尾部斜杠）
-    let res = http_client
-        .request(method, absolute_url)
-        .headers(headers)
-        .body(PROPFIND_BODY)
-        .send()
-        .await?;
-
-    let status = res.status();
-
-    let xml_text = res.text().await?;
-
-    if !status.is_success() && status.as_u16() != 207 {
-        return Err(GetFoldersError::StatusParseError(format!(
-            "状态解析异常 {status}: {xml}",
-            status = status,
-            xml = xml_text
-        )));
-    }
-
-    let multi_status: MultiStatus = from_str(&xml_text)?;
-
-    Ok(multi_status)
-}
+use reqwest::Url;
+use crate::public::utils::get_folders_public_impl::{get_folders_with_client, GetFoldersError};
 
 type TResourcesFile = Vec<Vec<ResourcesFile>>;
 
