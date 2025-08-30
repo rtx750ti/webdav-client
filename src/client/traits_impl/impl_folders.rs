@@ -1,24 +1,25 @@
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::raw_file_xml::MultiStatus;
 use crate::client::traits::account::Account;
-use crate::client::traits::folder::Folders;
+use crate::client::traits::folder::{
+    Folders, TResourcesFileCollectionList,
+};
 use crate::client::{THttpClientArc, WebDavClient};
 use crate::public::enums::depth::Depth;
 use crate::public::traits::url_format::UrlFormat;
-use crate::resources_file::structs::resources_file::ResourcesFile;
+use crate::public::utils::get_folders_public_impl::{
+    GetFoldersError, get_folders_with_client,
+};
 use crate::resources_file::traits::to_resource_file_data::ToResourceFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;
 use reqwest::Url;
-use crate::public::utils::get_folders_public_impl::{get_folders_with_client, GetFoldersError};
-
-type TResourcesFile = Vec<Vec<ResourcesFile>>;
 
 pub fn handle_result(
     results: Vec<Result<MultiStatus, GetFoldersError>>,
     http_client_arc: THttpClientArc,
     base_url: &Url,
-) -> Result<TResourcesFile, GetFoldersError> {
+) -> Result<TResourcesFileCollectionList, GetFoldersError> {
     // 这里只做简单收集，具体转换成 ResourcesFile 的逻辑你自己加
     let mut all_files = Vec::new();
 
@@ -54,7 +55,7 @@ impl Folders for WebDavClient {
         key: &ClientKey,
         reactive_paths: &Vec<String>,
         depth: &Depth,
-    ) -> Result<TResourcesFile, GetFoldersError> {
+    ) -> Result<TResourcesFileCollectionList, GetFoldersError> {
         let http_client_arc = self.get_http_client(key)?;
 
         // 构建所有任务（这里只做并发请求）

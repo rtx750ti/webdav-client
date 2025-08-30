@@ -124,12 +124,12 @@ pub async fn chunked_download(
 
 pub async fn not_chunked_download(
     http_client: &Client,
-    file_absolute_url: &str,
+    resource_file_data: &ResourceFileData,
     save_absolute_path: &PathBuf,
     download_config: &DownloadConfig,
 ) -> Result<(), String> {
     let resp = http_client
-        .get(file_absolute_url)
+        .get(&resource_file_data.absolute_path)
         .send()
         .await
         .map_err(|e| format!("[http_client] {}", e.to_string()))?;
@@ -139,9 +139,14 @@ pub async fn not_chunked_download(
         .await
         .map_err(|e| format!("[bytes] {}", e.to_string()))?;
 
-    tokio::fs::write(&save_absolute_path, &bytes)
-        .await
-        .map_err(|e| format!("[write] {}", e.to_string()))?;
+    tokio::fs::write(&save_absolute_path, &bytes).await.map_err(|e| {
+        format!(
+            "[write] {} {} {}",
+            e.to_string(),
+            resource_file_data.name,
+            save_absolute_path.to_string_lossy()
+        )
+    })?;
 
     Ok(())
 }
@@ -152,6 +157,19 @@ pub async fn recursive_directory(
     http_client: &Client,
     download_config: &DownloadConfig,
 ) -> Result<(), String> {
+    // 拼接当前目录路径
+    let current_dir = save_absolute_path.join(&resource_file_data.name);
+
+    // 确保本地目录存在
+    if let Err(e) = tokio::fs::create_dir_all(&current_dir).await {
+        return Err(format!(
+            "创建目录失败: {:?}, 错误: {}",
+            current_dir,
+            e.to_string()
+        ));
+    }
+
+    // 请求子文件/目录
     let children = get_folders_with_client(
         http_client.clone(),
         &resource_file_data.absolute_path,
@@ -168,10 +186,13 @@ pub async fn recursive_directory(
         let children_resource_file =
             data.to_resources_file(http_client.clone());
 
-        // 递归
+        // 拼接子文件/目录的本地保存路径
+        let child_save_path = current_dir.clone();
+
+        // 递归/下载
         let _ = children_resource_file
             .download(
-                &save_absolute_path.to_string_lossy().to_string(),
+                &child_save_path.to_string_lossy().to_string(),
                 download_config,
             )
             .await?;
@@ -187,17 +208,18 @@ pub async fn handle_download(
     download_config: &DownloadConfig,
 ) -> Result<(), String> {
     if resource_file_data.is_dir {
-        if download_config.auto_download_folder {
+        return if download_config.auto_download_folder {
             // 先不处理递归
-            // let _ = recursive_directory(
-            //     resource_file_data,
-            //     save_absolute_path,
-            //     http_client,
-            //     download_config,
-            // )
-            // .await?;
+            let _ = recursive_directory(
+                resource_file_data,
+                save_absolute_path,
+                http_client,
+                download_config,
+            )
+                .await?;
+            Ok(())
         } else {
-            return Ok(());
+            Ok(())
         }
     }
 
@@ -206,7 +228,7 @@ pub async fn handle_download(
     ) {
         let _ = not_chunked_download(
             http_client,
-            &resource_file_data.absolute_path,
+            resource_file_data,
             save_absolute_path,
             download_config,
         )

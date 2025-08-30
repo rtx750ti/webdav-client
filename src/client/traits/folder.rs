@@ -10,6 +10,11 @@ pub enum FoldersError {
     GetFoldersError(#[from] GetFoldersError),
 }
 
+/// 资源文件集合
+pub type TResourcesFileCollection = Vec<ResourcesFile>;
+/// 资源文件组（包含多个资源文件集合）
+pub type TResourcesFileCollectionList = Vec<TResourcesFileCollection>;
+
 #[async_trait]
 pub trait Folders {
     async fn get_folders(
@@ -17,5 +22,5 @@ pub trait Folders {
         key: &ClientKey,
         reactive_paths: &Vec<String>,
         depth: &Depth,
-    ) -> Result<Vec<Vec<ResourcesFile>>, GetFoldersError>;
+    ) -> Result<TResourcesFileCollectionList, GetFoldersError>;
 }

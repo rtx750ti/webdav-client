@@ -1,4 +1,5 @@
 use futures_util::future::{AbortHandle, AbortRegistration};
+
 pub struct DownloadConfig {
     pub auto_download_folder: bool, // 自动下载文件夹
     pub max_speed: Option<u64>,     // 限速
