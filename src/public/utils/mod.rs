@@ -1,4 +1,5 @@
 pub mod get_folders_public_impl;
+pub mod handle_file;
 
 use base64::Engine;
 use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};

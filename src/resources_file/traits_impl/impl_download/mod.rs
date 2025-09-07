@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use std::sync::Arc;
 use crate::download_config::DownloadConfig;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
-use crate::resources_file::traits_impl::impl_download::download::download_file::handle_download;
+use crate::resources_file::traits_impl::impl_download::download::handle_download::handle_download;
 
 /// 预处理保存文件路径
 fn preprocessing_save_path(
