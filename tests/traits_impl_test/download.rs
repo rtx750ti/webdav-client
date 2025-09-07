@@ -2,11 +2,11 @@ use crate::{WEBDAV_ENV_PATH_2, load_account, WEBDAV_ENV_PATH_1};
 use webdav_client::client::WebDavClient;
 use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::folder::Folders;
+use webdav_client::download_config::DownloadConfig;
 use webdav_client::downloader::Downloader;
 use webdav_client::downloader::enums::download_task::DownloadTask;
 use webdav_client::downloader::traits::batch_download::BatchDownload;
 use webdav_client::public::enums::depth::Depth;
-use webdav_client::resources_file::structs::download_config::DownloadConfig;
 use webdav_client::resources_file::traits::download::Download;
 
 #[tokio::test]

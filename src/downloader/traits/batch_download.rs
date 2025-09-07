@@ -1,5 +1,5 @@
 use crate::downloader::enums::download_task::DownloadTask;
-use crate::resources_file::structs::download_config::DownloadConfig;
+use crate::download_config::DownloadConfig;
 use async_trait::async_trait;
 
 #[async_trait]

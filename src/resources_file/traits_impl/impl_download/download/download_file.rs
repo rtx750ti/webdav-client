@@ -1,6 +1,5 @@
 use crate::public::enums::depth::Depth;
 use crate::public::utils::get_folders_public_impl::get_folders_with_client;
-use crate::resources_file::structs::download_config::DownloadConfig;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::traits::download::Download;
 use crate::resources_file::traits::to_resource_file_data::ToResourceFileData;
@@ -10,6 +9,7 @@ use std::cmp::min;
 use std::path::PathBuf;
 use tokio::fs::OpenOptions;
 use tokio::io::{AsyncSeekExt, AsyncWriteExt};
+use crate::download_config::DownloadConfig;
 
 /// 分片黑名单，这些厂商不讲武德，拒绝分片请求，甚至拿1比特数据都要算下载了整个文件的流量
 const CHUNKED_DOWNLOAD_BLACKLIST: [&str; 1] =

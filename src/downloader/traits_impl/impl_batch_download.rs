@@ -2,11 +2,11 @@ use crate::client::traits::folder::TResourcesFileCollection;
 use crate::downloader::Downloader;
 use crate::downloader::enums::download_task::DownloadTask;
 use crate::downloader::traits::batch_download::BatchDownload;
-use crate::resources_file::structs::download_config::DownloadConfig;
 use crate::resources_file::traits::download::Download;
 use async_trait::async_trait;
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
+use crate::download_config::DownloadConfig;
 
 #[async_trait]
 impl BatchDownload for Downloader {
