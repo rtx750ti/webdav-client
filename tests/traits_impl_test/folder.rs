@@ -23,7 +23,7 @@ async fn test_get_folders() -> Result<(), FoldersError> {
     let data = client
         .get_folders(
             &key,
-            &vec!["./".to_string(), "./书签".to_string(), "/".to_string()],
+            &vec!["./".to_string()],
             &Depth::One,
         )
         .await?;

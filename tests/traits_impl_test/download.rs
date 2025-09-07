@@ -12,7 +12,7 @@ use webdav_client::resources_file::traits::download::Download;
 #[tokio::test]
 async fn test_download() -> Result<(), String> {
     let mut client = WebDavClient::new();
-    let webdav_account = load_account(WEBDAV_ENV_PATH_2);
+    let webdav_account = load_account(WEBDAV_ENV_PATH_1);
 
     let key = client
         .add_account(
@@ -23,7 +23,7 @@ async fn test_download() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let data = client
-        .get_folders(&key, &vec!["./测试文件夹".to_string()], &Depth::One)
+        .get_folders(&key, &vec!["./".to_string()], &Depth::One)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -46,7 +46,7 @@ async fn test_download() -> Result<(), String> {
 async fn test_downloader_multiply_task() -> Result<(), String> {
     let mut client = WebDavClient::new();
 
-    let webdav_account = load_account(WEBDAV_ENV_PATH_2);
+    let webdav_account = load_account(WEBDAV_ENV_PATH_1);
 
     let key = client
         .add_account(
@@ -61,7 +61,7 @@ async fn test_downloader_multiply_task() -> Result<(), String> {
     let downloader = Downloader::new();
 
     let data = client
-        .get_folders(&key, &vec!["./测试文件夹/".to_string()], &Depth::One)
+        .get_folders(&key, &vec!["./".to_string()], &Depth::One)
         .await
         .map_err(|e| e.to_string())?;
 
