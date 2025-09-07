@@ -7,9 +7,11 @@ use std::env;
 #[cfg(test)]
 use std::path::Path;
 
+/// 坚果云
 #[cfg(test)]
 pub const WEBDAV_ENV_PATH_1: &str =
     "C:\\project\\rust\\quick-sync\\.env.jianguoyun";
+/// teracloud
 #[cfg(test)]
 pub const WEBDAV_ENV_PATH_2: &str =
     "C:\\project\\rust\\quick-sync\\.env.teracloud";

@@ -11,7 +11,7 @@ async fn test_add_account() -> Result<(), AccountError> {
     let webdav_account = load_account(WEBDAV_ENV_PATH_1);
 
     let result = client.add_account(
-        &"",
+        &webdav_account.url,
         &webdav_account.username,
         &webdav_account.password,
     );
