@@ -1,8 +1,9 @@
 pub mod client;
-pub mod resources_file;
-pub mod public;
-pub mod downloader;
 pub mod download_config;
+pub mod downloader;
+#[cfg(feature = "activate")]
 pub mod file_explorer;
-pub mod event_bus;
+pub mod public;
+#[cfg(feature = "activate")]
 pub mod resource_collector;
+pub mod resources_file;

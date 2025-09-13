@@ -1,7 +1,7 @@
 use crate::public::utils::format_base_url;
 use reqwest::Url;
 
-#[derive(Eq, Hash, PartialEq, Clone)]
+#[derive(Debug, Eq, Hash, PartialEq, Clone)]
 pub struct ClientKey {
     base_url: Url,
     username: String,

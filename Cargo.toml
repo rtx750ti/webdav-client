@@ -7,7 +7,7 @@ edition = "2024"
 doctest = false
 
 [features]
-default = ["activate"]
+default = []
 activate = []
 show-test-detail = []
 

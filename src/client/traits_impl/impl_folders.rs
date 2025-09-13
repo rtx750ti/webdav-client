@@ -1,9 +1,12 @@
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::raw_file_xml::MultiStatus;
+use crate::client::traits::account::Account;
 use crate::client::traits::folder::{
     Folders, TResourcesFileCollectionList,
 };
 use crate::client::{THttpClientArc, WebDavClient};
+#[cfg(feature = "activate")]
+use crate::file_explorer::TReplySender;
 use crate::public::enums::depth::Depth;
 use crate::public::traits::url_format::UrlFormat;
 use crate::public::utils::get_folders_public_impl::{
@@ -13,29 +16,47 @@ use crate::resources_file::traits::to_resource_file_data::ToResourceFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;
 use reqwest::Url;
-use crate::client::traits::account::Account;
 
-pub fn handle_result(
+struct HandleResultArgs {
     results: Vec<Result<MultiStatus, GetFoldersError>>,
     http_client_arc: THttpClientArc,
-    base_url: &Url,
+    base_url: Url,
+    #[cfg(feature = "activate")]
+    reply_sender: TReplySender,
+}
+
+pub fn handle_result(
+    arg: HandleResultArgs,
 ) -> Result<TResourcesFileCollectionList, GetFoldersError> {
     // 这里只做简单收集，具体转换成 ResourcesFile 的逻辑你自己加
     let mut all_files = Vec::new();
 
-    for res in results {
+    for res in arg.results {
         match res {
             Ok(multi_status) => {
                 let mut resources_files = Vec::new();
                 let resource_data_list =
-                    multi_status.to_resource_file_data(base_url)?;
+                    multi_status.to_resource_file_data(&arg.base_url)?;
 
                 for resource_file_data in resource_data_list {
-                    resources_files.push(
-                        resource_file_data.to_resources_file(
-                            http_client_arc.get_client(),
-                        ),
-                    )
+                    #[cfg(feature = "activate")]
+                    {
+                        resources_files.push(
+                            resource_file_data.to_resources_file(
+                                arg.http_client_arc.get_client(),
+                                arg.reply_sender.clone(),
+                            ),
+                        )
+                    }
+
+                    #[cfg(not(feature = "activate"))]
+                    {
+                        resources_files.push(
+                            resource_file_data.to_resources_file(
+                                arg.http_client_arc.get_client(),
+                            ),
+                        )
+                    }
                 }
                 all_files.push(resources_files)
             }
@@ -75,9 +96,45 @@ impl Folders for WebDavClient {
         let results: Vec<Result<MultiStatus, GetFoldersError>> =
             join_all(tasks).await;
 
-        let all_files =
-            handle_result(results, http_client_arc, &key.get_base_url())?;
+        #[cfg(not(feature = "activate"))]
+        {
+            let handle_result_args = HandleResultArgs {
+                results,
+                http_client_arc,
+                base_url: key.get_base_url(),
+            };
 
-        Ok(all_files)
+            let all_files =
+                crate::client::traits_impl::impl_folders::handle_result(
+                    handle_result_args,
+                )?;
+
+            Ok(all_files)
+        }
+
+        #[cfg(feature = "activate")]
+        {
+            let resource_collector_option =
+                self.file_explorer.get_resource_collector(key);
+
+            if let Some(resource_collector) = resource_collector_option {
+                let reply_sender = resource_collector.get_reply_sender();
+
+                let handle_result_args = HandleResultArgs {
+                    results,
+                    http_client_arc,
+                    base_url: key.get_base_url(),
+                    reply_sender,
+                };
+
+                let all_files = crate::client::traits_impl::impl_folders::handle_result(handle_result_args)?;
+                Ok(all_files)
+            } else {
+                Err(GetFoldersError::NotFindResourceCollector(
+                    key.get_username(),
+                    key.get_base_url().to_string(),
+                ))
+            }
+        }
     }
 }

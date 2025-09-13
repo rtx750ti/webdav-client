@@ -12,6 +12,7 @@ use tokio::fs::File;
 use tokio::io::{AsyncSeekExt, AsyncWriteExt};
 use tokio::sync::Semaphore;
 use tokio::task::JoinHandle;
+use crate::resources_file::traits::download::TDownloadConfig;
 
 /// 分片黑名单，这些厂商不讲武德，拒绝分片请求，甚至拿1比特数据都要算下载了整个文件的流量
 const CHUNKED_DOWNLOAD_BLACKLIST: [&str; 1] =
@@ -146,21 +147,25 @@ async fn build_download_tasks<'a>(
     Ok((tasks, download_task_option))
 }
 
+pub struct ChunkedDownloadArgs {
+    pub(crate) resource_file_data: Arc<ResourceFileData>,
+    pub(crate) http_client: Client,
+    pub(crate) save_absolute_path: PathBuf,
+    pub(crate) download_config: TDownloadConfig,
+}
+
 pub async fn chunked_download(
-    resource_file_data: &ResourceFileData,
-    http_client: &Client,
-    save_absolute_path: &PathBuf,
-    _download_config: &DownloadConfig,
+    args: ChunkedDownloadArgs,
 ) -> Result<(), String> {
-    let total_size = resource_file_data.size.ok_or_else(|| {
+    let total_size = args.resource_file_data.size.ok_or_else(|| {
         format!(
             "文件大小未知，无法分片下载 {}",
-            resource_file_data.absolute_path
+            args.resource_file_data.absolute_path
         )
     })?;
 
     let local_file_download_state =
-        get_local_file_size(save_absolute_path, total_size)
+        get_local_file_size(&args.save_absolute_path, total_size)
             .await
             .map_err(|e| e.to_string())?;
 
@@ -177,18 +182,19 @@ pub async fn chunked_download(
     let file = fs::OpenOptions::new()
         .create(true)
         .write(true)
-        .open(save_absolute_path)
+        .open(args.save_absolute_path)
         .await
         .map_err(|e| e.to_string())?;
 
-    let file_url = &resource_file_data.absolute_path;
+    let file_url = &args.resource_file_data.absolute_path;
 
-    let thread_count = computed_semaphore_count(resource_file_data.size); // 计算线程数
+    let thread_count =
+        computed_semaphore_count(args.resource_file_data.size); // 计算线程数
     let semaphore = Arc::new(Semaphore::new(thread_count));
 
     let (tasks, mut download_task_option) =
         build_download_tasks(DownloadTaskOption {
-            http_client,
+            http_client: &args.http_client,
             file_url,
             semaphore,
             start,

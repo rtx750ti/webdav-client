@@ -2,16 +2,16 @@ mod download;
 use std::path::PathBuf;
 use std::str::FromStr;
 use crate::resources_file::structs::resources_file::ResourcesFile;
-use crate::resources_file::traits::download::Download;
+use crate::resources_file::traits::download::{Download, TDownloadConfig};
 use async_trait::async_trait;
 use std::sync::Arc;
 use crate::download_config::DownloadConfig;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
-use crate::resources_file::traits_impl::impl_download::download::handle_download::handle_download;
+use crate::resources_file::traits_impl::impl_download::download::handle_download::{handle_download, HandleDownloadArgs};
 
 /// 预处理保存文件路径
 fn preprocessing_save_path(
-    resource_file_data: &ResourceFileData,
+    resource_file_data: Arc<ResourceFileData>,
     save_absolute_path: &str,
 ) -> Result<PathBuf, String> {
     // 预处理保存文件的完整路径
@@ -30,7 +30,7 @@ impl Download for ResourcesFile {
     async fn download(
         self,
         save_absolute_path: &str,
-        download_config: &DownloadConfig,
+        download_config: TDownloadConfig,
     ) -> Result<Arc<Self>, String> {
         let save_absolute_path =
             preprocessing_save_path(self.get_data(), save_absolute_path)
@@ -38,17 +38,22 @@ impl Download for ResourcesFile {
                 format!("[preprocessing_save_path] {}", e.to_string())
             })?;
 
-        println!("保存路径：{:?}",save_absolute_path);
+        println!("保存路径：{:?}", save_absolute_path);
 
         let http_client = self.get_http_client();
-        handle_download(
-            self.get_data(),
-            &save_absolute_path,
-            http_client,
-            download_config,
-        )
-        .await
-        .map_err(|e| format!("[handle_download] {}", e.to_string()))?;
+
+        let handle_download_args = HandleDownloadArgs {
+            resource_file_data: self.get_data().clone(),
+            save_absolute_path,
+            http_client: http_client.clone(),
+            download_config: download_config.clone(),
+            #[cfg(feature = "activate")]
+            reply_sender: self.reply_sender.clone(),
+        };
+
+        handle_download(handle_download_args)
+            .await
+            .map_err(|e| format!("[handle_download] {}", e.to_string()))?;
         Ok(Arc::new(self))
     }
 }

@@ -1,3 +1,4 @@
+use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::raw_file_xml::MultiStatus;
 use crate::client::traits::account::AccountError;
 use crate::public::enums::depth::Depth;
@@ -33,6 +34,9 @@ pub enum GetFoldersError {
 
     #[error("解析URL地址错误->{0}")]
     UrlFormatError(#[from] UrlFormatError),
+
+    #[error("无法找到对应的资源收集器->账号:{0}地址:{1}")]
+    NotFindResourceCollector(String, String),
 }
 
 const PROPFIND_BODY: &str = r#"<?xml version="1.0" encoding="utf-8" ?>

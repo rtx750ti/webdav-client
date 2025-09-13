@@ -1,6 +1,6 @@
 use crate::downloader::enums::download_task::DownloadTask;
-use crate::download_config::DownloadConfig;
 use async_trait::async_trait;
+use crate::resources_file::traits::download::TDownloadConfig;
 
 #[async_trait]
 pub trait BatchDownload {
@@ -9,6 +9,6 @@ pub trait BatchDownload {
         &self,
         save_absolute_path: &str,
         download_task: DownloadTask,
-        download_config: &DownloadConfig,
+        download_config: TDownloadConfig,
     ) -> Result<(), String>;
 }

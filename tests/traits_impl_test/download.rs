@@ -1,4 +1,5 @@
 use crate::{WEBDAV_ENV_PATH_1, WEBDAV_ENV_PATH_2, load_account};
+use std::sync::Arc;
 use webdav_client::client::WebDavClient;
 use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::folder::Folders;
@@ -34,13 +35,14 @@ async fn test_download() -> Result<(), String> {
     println!("内容：{:?}", data);
 
     let config = DownloadConfig::default();
+    let config = Arc::new(config);
 
     for vec_resources_files in data {
         for resources_file in vec_resources_files {
             let _resources_file_arc = resources_file
                 .download(
                     "C:\\project\\rust\\quick-sync\\temp-download-files\\",
-                    &config,
+                    config.clone(),
                 )
                 .await?;
         }
@@ -80,7 +82,7 @@ async fn test_downloader_multiply_task() -> Result<(), String> {
         .download(
             "C:\\project\\rust\\quick-sync\\temp-download-files\\",
             download_task,
-            &config,
+            Arc::new(config),
         )
         .await?;
 
@@ -119,7 +121,7 @@ async fn test_downloader_single_task() -> Result<(), String> {
             if !resources_file.get_data().is_dir {
                 let download_task = DownloadTask::from(resources_file);
                 let _ =
-                    downloader.download("C:\\project\\rust\\quick-sync\\temp-download-files\\单个下载", download_task, &config).await;
+                    downloader.download("C:\\project\\rust\\quick-sync\\temp-download-files\\单个下载", download_task, Arc::new(config)).await;
                 return Ok(());
             }
         }

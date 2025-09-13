@@ -3,7 +3,7 @@ use crate::download_config::DownloadConfig;
 use crate::downloader::Downloader;
 use crate::downloader::enums::download_task::DownloadTask;
 use crate::downloader::traits::batch_download::BatchDownload;
-use crate::resources_file::traits::download::Download;
+use crate::resources_file::traits::download::{Download, TDownloadConfig};
 use async_trait::async_trait;
 use futures_util::StreamExt;
 use futures_util::stream::FuturesUnordered;
@@ -16,7 +16,7 @@ impl BatchDownload for Downloader {
         &self,
         save_absolute_path: &str,
         download_task: DownloadTask,
-        download_config: &DownloadConfig,
+        download_config: TDownloadConfig,
     ) -> Result<(), String> {
         match download_task {
             DownloadTask::ResourcesFileCollectionList(folders_result) => {
@@ -35,9 +35,10 @@ impl BatchDownload for Downloader {
                     let permit =
                         semaphore.clone().acquire_owned().await.unwrap();
                     let save_path = save_absolute_path.to_string();
-                    let config = download_config.clone(); // 需要实现 Clone trait
+                    let download_config = download_config.clone();
+
                     tasks.push(tokio::spawn(async move {
-                        let result = resources_file.download(&save_path, &config).await;
+                        let result = resources_file.download(&save_path, download_config).await;
                         drop(permit); // 释放信号量
                         result.map_err(|e| {
                             format!(
