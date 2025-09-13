@@ -8,6 +8,8 @@ pub enum AddAccountError {
     CreateKeyError(String),
     #[error("创建HTTP客户端错误->{0}")]
     CreateHttpClientError(String),
+    #[error("尝试插入账号到资源收集器列表时错误->{0}")]
+    InsertResourceCollectorError(String),
 }
 
 #[derive(Debug, thiserror::Error)]

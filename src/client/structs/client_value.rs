@@ -5,6 +5,7 @@ use crate::public::utils::{
 use reqwest::{Client, Url};
 use std::sync::Arc;
 
+#[derive(Debug, Clone)]
 pub struct HttpClient {
     client: Client, // 这个客户端本身的clone就已经在内部实现了Rc，所以就不用Arc了
     base_url: Url,

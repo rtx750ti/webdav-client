@@ -48,7 +48,7 @@ impl Download for ResourcesFile {
             http_client: http_client.clone(),
             download_config: download_config.clone(),
             #[cfg(feature = "activate")]
-            reply_sender: self.reply_sender.clone(),
+            reply_sender: self.get_reply_sender(),
         };
 
         handle_download(handle_download_args)

@@ -11,12 +11,17 @@ use tokio::sync::watch;
 
 pub type TWebDavChildClients = HashMap<ClientKey, THttpClientArc>;
 
-pub struct RefWebDavChildClients {
-    pub(crate) sender: watch::Sender<TWebDavChildClients>,
-    pub(crate) receiver: watch::Receiver<TWebDavChildClients>,
+pub type TReactiveChildClientsReceiver =
+    watch::Receiver<TWebDavChildClients>;
+pub type TReactiveChildClientsSender = watch::Sender<TWebDavChildClients>;
+
+#[derive(Debug, Clone)]
+pub struct ReactiveChildClients {
+    pub(crate) sender: TReactiveChildClientsSender,
+    pub(crate) receiver: TReactiveChildClientsReceiver,
 }
 
-impl RefWebDavChildClients {
+impl ReactiveChildClients {
     pub fn new() -> Self {
         let (sender, receiver) = watch::channel(HashMap::new());
         Self { sender, receiver }
@@ -31,5 +36,9 @@ impl RefWebDavChildClients {
     pub(crate) fn can_modify_value<T>(arc_client: &Arc<T>) -> bool {
         let strong = Arc::strong_count(&arc_client);
         if strong > 2 { false } else { true }
+    }
+
+    pub fn get_reactive_receiver(&self) -> TReactiveChildClientsReceiver {
+        self.receiver.clone()
     }
 }

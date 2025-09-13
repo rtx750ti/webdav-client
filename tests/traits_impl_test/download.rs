@@ -24,11 +24,7 @@ async fn test_download() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let data = client
-        .get_folders(
-            &key,
-            &vec!["./测试文件夹/测试文件3.txt".to_string()],
-            &Depth::One,
-        )
+        .get_folders(&key, &vec!["./".to_string()], &Depth::One)
         .await
         .map_err(|e| e.to_string())?;
 

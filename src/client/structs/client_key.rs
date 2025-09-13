@@ -1,5 +1,8 @@
+use std::sync::Arc;
 use crate::public::utils::format_base_url;
 use reqwest::Url;
+
+pub type TClientKey = Arc<ClientKey>;
 
 #[derive(Debug, Eq, Hash, PartialEq, Clone)]
 pub struct ClientKey {

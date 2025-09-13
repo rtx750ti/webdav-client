@@ -1,3 +1,4 @@
+use crate::client::structs::client_key::TClientKey;
 #[cfg(feature = "activate")]
 use crate::file_explorer::TReplySender;
 use crate::resources_file::structs::resources_file::ResourcesFile;
@@ -25,8 +26,9 @@ impl ResourceFileData {
         self,
         http_client: Client,
         reply_sender: TReplySender,
+        client_key: TClientKey,
     ) -> ResourcesFile {
-        ResourcesFile::new(self, http_client, reply_sender)
+        ResourcesFile::new(self, http_client, reply_sender, client_key)
     }
 
     #[cfg(not(feature = "activate"))]

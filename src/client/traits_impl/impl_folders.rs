@@ -1,4 +1,4 @@
-use crate::client::structs::client_key::ClientKey;
+use crate::client::structs::client_key::{ClientKey, TClientKey};
 use crate::client::structs::raw_file_xml::MultiStatus;
 use crate::client::traits::account::Account;
 use crate::client::traits::folder::{
@@ -16,13 +16,16 @@ use crate::resources_file::traits::to_resource_file_data::ToResourceFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;
 use reqwest::Url;
+use std::sync::Arc;
 
-struct HandleResultArgs {
-    results: Vec<Result<MultiStatus, GetFoldersError>>,
-    http_client_arc: THttpClientArc,
-    base_url: Url,
+pub struct HandleResultArgs {
+    pub(crate) results: Vec<Result<MultiStatus, GetFoldersError>>,
+    pub(crate) http_client_arc: THttpClientArc,
+    pub(crate) base_url: Url,
     #[cfg(feature = "activate")]
-    reply_sender: TReplySender,
+    pub(crate) reply_sender: TReplySender,
+    #[cfg(feature = "activate")]
+    pub(crate) client_key: TClientKey,
 }
 
 pub fn handle_result(
@@ -45,6 +48,7 @@ pub fn handle_result(
                             resource_file_data.to_resources_file(
                                 arg.http_client_arc.get_client(),
                                 arg.reply_sender.clone(),
+                                arg.client_key.clone(),
                             ),
                         )
                     }
@@ -125,9 +129,11 @@ impl Folders for WebDavClient {
                     http_client_arc,
                     base_url: key.get_base_url(),
                     reply_sender,
+                    client_key: Arc::new(key.clone()),
                 };
 
-                let all_files = crate::client::traits_impl::impl_folders::handle_result(handle_result_args)?;
+                let all_files = handle_result(handle_result_args)?;
+                
                 Ok(all_files)
             } else {
                 Err(GetFoldersError::NotFindResourceCollector(

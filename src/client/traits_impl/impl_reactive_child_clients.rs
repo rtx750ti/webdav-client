@@ -1,14 +1,14 @@
 use crate::client::THttpClientArc;
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::client_value::HttpClient;
-use crate::client::structs::ref_web_dav_child_clients::RefWebDavChildClients;
+use crate::client::structs::ref_reactive_child_clients::ReactiveChildClients;
 use crate::client::traits::account::{
     Account, AccountError, AddAccountError, GetHttpClientError,
     RemoveAccountError, RemoveAccountForceError,
 };
 use std::sync::Arc;
 
-impl Account for RefWebDavChildClients {
+impl Account for ReactiveChildClients {
     fn add_account(
         &self,
         base_url: &str,

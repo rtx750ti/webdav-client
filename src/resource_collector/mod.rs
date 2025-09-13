@@ -1,5 +1,6 @@
 use crate::file_explorer::{
-    BroadcastEvent, ChannelEvent, TBroadcastSender, TReplySender,
+    BroadcastEvent, ReplyEvent, ReplyStatus, TBroadcastSender,
+    TReplySender,
 };
 use tokio::sync::{broadcast, mpsc};
 
@@ -36,8 +37,20 @@ impl ResourceCollector {
         let (broadcast_sender, _) =
             broadcast::channel(BroadcastBufferSize);
 
-        let (child_reply_sender, reply_receiver) =
-            mpsc::channel::<ChannelEvent>(ChannelBufferSize);
+        let (child_reply_sender, mut reply_receiver) =
+            mpsc::channel::<ReplyEvent>(ChannelBufferSize);
+
+        tokio::spawn(async move {
+            while let Some(reply_event) = reply_receiver.recv().await {
+                let reply_version = &reply_event.version;
+                match &reply_event.reply_status {
+                    ReplyStatus::Reject(reject_cause) => {}
+                    ReplyStatus::Resolve(resolve_message) => {}
+                    ReplyStatus::Ack => {}
+                    ReplyStatus::Activated(unique_key) => {}
+                }
+            }
+        });
 
         Self { broadcast_sender, child_reply_sender, self_reply_sender }
     }

@@ -120,7 +120,7 @@ async fn test_remove_account_force() -> Result<(), AccountError> {
             );
 
             // tokio 异步延迟
-            sleep(Duration::from_secs(1)).await;
+            sleep(Duration::from_secs(2)).await;
 
             println!(
                 "[test_remove_account_force] 测试延迟后计数器: {}",

@@ -1,8 +1,8 @@
 pub mod structs;
 pub mod traits;
-pub mod traits_impl;
+mod traits_impl;
 use crate::client::structs::client_value::HttpClient;
-use crate::client::structs::ref_web_dav_child_clients::RefWebDavChildClients;
+use crate::client::structs::ref_reactive_child_clients::ReactiveChildClients;
 #[cfg(feature = "activate")]
 use crate::file_explorer::FileExplorer;
 use std::sync::Arc;
@@ -14,17 +14,21 @@ pub type THttpClientArc = Arc<HttpClient>; // 这里的Arc是共享的，并且�
 /// - Key就用来定位到客户端
 /// - Value就是一个对应账号的http服务器
 pub struct WebDavClient {
-    child_clients: RefWebDavChildClients,
+    child_clients: ReactiveChildClients,
     #[cfg(feature = "activate")]
     file_explorer: FileExplorer,
 }
 
 impl WebDavClient {
     pub fn new() -> Self {
-        let child_clients = RefWebDavChildClients::new();
+        let child_clients = ReactiveChildClients::new();
         #[cfg(feature = "activate")]
         {
-            Self { child_clients, file_explorer: FileExplorer::new() }
+            let receiver = child_clients.get_reactive_receiver();
+            let file_explorer = FileExplorer::new(receiver);
+            let file_explorer = file_explorer.start();
+
+            Self { child_clients, file_explorer }
         }
 
         #[cfg(not(feature = "activate"))]

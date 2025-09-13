@@ -1,5 +1,7 @@
 use crate::client::structs::client_key::ClientKey;
-use crate::client::traits::account::Account;
+use crate::client::traits::account::{
+    Account, AccountError, AddAccountError,
+};
 use crate::client::{THttpClientArc, WebDavClient};
 
 impl Account for WebDavClient {
@@ -8,30 +10,36 @@ impl Account for WebDavClient {
         base_url: &str,
         username: &str,
         password: &str,
-    ) -> Result<ClientKey, crate::client::traits::account::AccountError>
-    {
-        self.child_clients.add_account(base_url, username, password)
+    ) -> Result<ClientKey, AccountError> {
+        let key = self
+            .child_clients
+            .add_account(base_url, username, password)?;
+
+        let key_clone = key.clone();
+
+        let _ =
+            self.file_explorer.insert_resource_collector(key).map_err(
+                |e| AddAccountError::InsertResourceCollectorError(e),
+            )?;
+
+        Ok(key_clone)
     }
 
-    fn remove_account(
-        &self,
-        key: &ClientKey,
-    ) -> Result<(), crate::client::traits::account::AccountError> {
+    fn remove_account(&self, key: &ClientKey) -> Result<(), AccountError> {
         self.child_clients.remove_account(key)
     }
 
     fn get_http_client(
         &self,
         key: &ClientKey,
-    ) -> Result<THttpClientArc, crate::client::traits::account::AccountError>
-    {
+    ) -> Result<THttpClientArc, AccountError> {
         self.child_clients.get_http_client(key)
     }
 
     fn remove_account_force(
         &self,
         key: &ClientKey,
-    ) -> Result<(), crate::client::traits::account::AccountError> {
+    ) -> Result<(), AccountError> {
         self.child_clients.remove_account_force(key)
     }
 }
