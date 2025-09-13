@@ -7,8 +7,8 @@ edition = "2024"
 doctest = false
 
 [features]
-default = ["friendly-xml"]
-friendly-xml = []
+default = ["activate"]
+activate = []
 show-test-detail = []
 
 [dependencies]

@@ -3,8 +3,13 @@ pub mod traits;
 pub mod traits_impl;
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::client_value::HttpClient;
-use std::collections::HashMap;
+use crate::client::structs::ref_web_dav_child_clients::{
+    RefWebDavChildClients, TWebDavChildClients,
+};
+use crate::file_explorer::FileExplorer;
 use std::sync::Arc;
+use tokio::sync::watch;
+
 pub type THttpClientArc = Arc<HttpClient>; // 这里的Arc是共享的，并且永远不会被修改，只会被删除，所以可以设计无锁结构
 
 /// WebDav客户端对象
@@ -12,11 +17,13 @@ pub type THttpClientArc = Arc<HttpClient>; // 这里的Arc是共享的，并且�
 /// - Key就用来定位到客户端
 /// - Value就是一个对应账号的http服务器
 pub struct WebDavClient {
-    clients: HashMap<ClientKey, THttpClientArc>,
+    child_clients: RefWebDavChildClients,
+    file_explorer: FileExplorer,
 }
 
 impl WebDavClient {
     pub fn new() -> Self {
-        Self { clients: HashMap::new() }
+        let child_clients = RefWebDavChildClients::new();
+        Self { child_clients, file_explorer: FileExplorer::new() }
     }
 }

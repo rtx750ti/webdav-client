@@ -62,34 +62,11 @@ pub trait Account {
     /// 通常会在这里创建一个 `Arc` 包裹的 HTTP 客户端实例，
     /// 并存入 `HashMap<ClientKey, Arc<THttpClientArc>>` 里进行管理。
     fn add_account(
-        &mut self,
+        &self,
         base_url: &str,
         username: &str,
         password: &str,
     ) -> Result<ClientKey, AccountError>;
-
-    /// 判断当前客户端实例是否可以被修改（或安全移除）。
-    ///
-    /// # 参数
-    /// * `arc_client` - 指向客户端实例的 `Arc` 智能指针。
-    ///
-    /// # 返回值
-    /// * `true`  - 如果强引用计数不超过 2，认为可以修改或移除。
-    /// * `false` - 如果强引用计数大于 2，说明外部还有额外持有者，暂不安全。
-    ///
-    /// # 计数规则
-    /// `Arc::strong_count` 返回的值包含：
-    /// 1. `HashMap` 中存放的那份引用
-    /// 2. 当前传入的 `&Arc<_>` 参数本身
-    /// 3. 可能在外部业务逻辑中持有的其他引用
-    ///
-    /// 因此：
-    /// - 计数 == 2 → 仅 Map 和当前调用持有，外部无人用，可以安全修改
-    /// - 计数 > 2 → 外部还有活跃引用，修改可能导致并发冲突
-    fn can_modify_value<T>(arc_client: &Arc<T>) -> bool {
-        let strong = Arc::strong_count(&arc_client);
-        if strong > 2 { false } else { true }
-    }
 
     /// 移除指定账户的客户端实例。
     ///
@@ -102,7 +79,7 @@ pub trait Account {
     /// # 注意
     /// 调用前可配合 [`can_modify_value`] 检查当前实例是否安全移除。
     fn remove_account(
-        &mut self,
+        &self,
         key: &ClientKey,
     ) -> Result<(), AccountError>;
 
@@ -153,7 +130,7 @@ pub trait Account {
     /// account.remove_account_force(&client_key)?;
     /// ```
     fn remove_account_force(
-        &mut self,
+        &self,
         key: &ClientKey,
     ) -> Result<(), AccountError>;
 }

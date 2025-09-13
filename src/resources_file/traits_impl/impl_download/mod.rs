@@ -38,6 +38,8 @@ impl Download for ResourcesFile {
                 format!("[preprocessing_save_path] {}", e.to_string())
             })?;
 
+        println!("保存路径：{:?}",save_absolute_path);
+
         let http_client = self.get_http_client();
         handle_download(
             self.get_data(),

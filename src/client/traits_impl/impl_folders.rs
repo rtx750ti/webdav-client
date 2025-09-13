@@ -1,6 +1,5 @@
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::raw_file_xml::MultiStatus;
-use crate::client::traits::account::Account;
 use crate::client::traits::folder::{
     Folders, TResourcesFileCollectionList,
 };
@@ -14,6 +13,7 @@ use crate::resources_file::traits::to_resource_file_data::ToResourceFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;
 use reqwest::Url;
+use crate::client::traits::account::Account;
 
 pub fn handle_result(
     results: Vec<Result<MultiStatus, GetFoldersError>>,
