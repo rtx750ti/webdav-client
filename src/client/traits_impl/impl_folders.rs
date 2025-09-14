@@ -119,7 +119,7 @@ impl Folders for WebDavClient {
         #[cfg(feature = "activate")]
         {
             let resource_collector_option =
-                self.file_explorer.get_resource_collector(key);
+                self.file_explorer.reactive_resource_collectors.get(key);
 
             if let Some(resource_collector) = resource_collector_option {
                 let reply_sender = resource_collector.get_reply_sender();
@@ -133,7 +133,7 @@ impl Folders for WebDavClient {
                 };
 
                 let all_files = handle_result(handle_result_args)?;
-                
+
                 Ok(all_files)
             } else {
                 Err(GetFoldersError::NotFindResourceCollector(

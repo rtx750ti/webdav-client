@@ -7,7 +7,14 @@ use webdav_client::client::traits::account::{Account, AccountError};
 
 #[tokio::test]
 async fn test_add_account() -> Result<(), AccountError> {
+    #[cfg(feature = "activate")]
     let mut client = WebDavClient::new();
+    #[cfg(feature = "activate")]
+    let _ = client.start();
+    
+    #[cfg(not(feature = "activate"))]
+    let client = WebDavClient::new();
+
     let webdav_account = load_account(WEBDAV_ENV_PATH_1);
 
     let result = client.add_account(

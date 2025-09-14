@@ -15,14 +15,18 @@ impl Account for WebDavClient {
             .child_clients
             .add_account(base_url, username, password)?;
 
-        let key_clone = key.clone();
+        #[cfg(feature = "activate")]
+        {
+            let _ = self
+                .file_explorer
+                .reactive_resource_collectors
+                .insert(&key)
+                .map_err(|e| {
+                    AddAccountError::InsertResourceCollectorError(e)
+                })?;
+        }
 
-        let _ =
-            self.file_explorer.insert_resource_collector(key).map_err(
-                |e| AddAccountError::InsertResourceCollectorError(e),
-            )?;
-
-        Ok(key_clone)
+        Ok(key)
     }
 
     fn remove_account(&self, key: &ClientKey) -> Result<(), AccountError> {

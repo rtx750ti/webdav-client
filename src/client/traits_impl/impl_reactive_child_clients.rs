@@ -1,7 +1,7 @@
 use crate::client::THttpClientArc;
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::client_value::HttpClient;
-use crate::client::structs::ref_reactive_child_clients::ReactiveChildClients;
+use crate::client::structs::reactive_child_clients::ReactiveChildClients;
 use crate::client::traits::account::{
     Account, AccountError, AddAccountError, GetHttpClientError,
     RemoveAccountError, RemoveAccountForceError,

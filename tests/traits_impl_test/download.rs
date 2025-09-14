@@ -28,8 +28,6 @@ async fn test_download() -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    println!("内容：{:?}", data);
-
     let config = DownloadConfig::default();
     let config = Arc::new(config);
 

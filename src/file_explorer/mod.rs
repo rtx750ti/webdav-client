@@ -1,5 +1,6 @@
 use crate::client::structs::client_key::ClientKey;
-use crate::client::structs::ref_reactive_child_clients::TReactiveChildClientsReceiver;
+use crate::client::structs::reactive_child_clients::TReactiveChildClientsReceiver;
+use crate::file_explorer::structs::reactive_resource_collector::ReactiveResourceCollectors;
 use crate::resource_collector::ResourceCollector;
 use crate::resources_file::structs::resources_file::ResourceFileUniqueKey;
 use std::collections::HashMap;
@@ -56,9 +57,6 @@ const BroadcastBufferSize: usize = 2000;
 
 const ChannelBufferSize: usize = 2000;
 
-pub type TResourceCollectorMap =
-    HashMap<ClientKey, Arc<ResourceCollector>>;
-
 /// 资源管理器
 ///
 /// 用于管理整个Webdav客户端的全部资源和收集器
@@ -74,74 +72,33 @@ pub struct FileExplorer {
     /// 用于给子结构体向上发送事件使用，本结构体不允许使用
     reply_sender: Option<TReplySender>,
 
-    resource_collector_sender: watch::Sender<TResourceCollectorMap>,
-
-    resource_collector_receiver: watch::Receiver<TResourceCollectorMap>,
-
-    child_clients_receiver: TReactiveChildClientsReceiver,
+    pub(crate) reactive_resource_collectors: ReactiveResourceCollectors,
 }
 
 impl FileExplorer {
-    pub fn new(receiver: TReactiveChildClientsReceiver) -> Self {
+    pub fn new() -> Self {
         let (broadcast_sender, _) =
             broadcast::channel(BroadcastBufferSize as usize);
 
-        let empty_resource_collector_map = HashMap::new();
-
-        let (resource_collector_sender, resource_collector_receiver) =
-            watch::channel(empty_resource_collector_map);
+        let reactive_resource_collectors =
+            ReactiveResourceCollectors::new(None);
 
         Self {
             broadcast_sender,
             reply_sender: None,
-            resource_collector_sender,
-            resource_collector_receiver,
-            child_clients_receiver: receiver,
+            reactive_resource_collectors,
         }
     }
 
-    pub fn get_resource_collector_sender(
-        &self,
-    ) -> watch::Sender<TResourceCollectorMap> {
-        self.resource_collector_sender.clone()
-    }
-
-    pub fn insert_resource_collector(
-        &self,
-        key: ClientKey,
-    ) -> Result<(), String> {
-        let reply_sender_option = self.get_reply_sender();
-
-        println!("正在写入账号到资源收集器列表");
-
-        if let Some(reply_sender) = reply_sender_option {
-            let resource_collector = ResourceCollector::new(reply_sender);
-
-            let mut map = self.resource_collector_sender.borrow().clone();
-            map.insert(key, Arc::new(resource_collector));
-            let _ = self.resource_collector_sender.send(map);
-
-            Ok(())
-        } else {
-            Err("资源管理器没有初始化".to_string())
-        }
-    }
-
-    pub fn get_resource_collector(
-        &self,
-        key: &ClientKey,
-    ) -> Option<Arc<ResourceCollector>> {
-        let map = self.resource_collector_receiver.borrow();
-        map.get(key).cloned()
-    }
-
-    pub fn start(mut self) -> Self {
-        let (sender, receiver) =
+    pub fn start(&mut self) -> Result<(), String> {
+        let (sender, mut receiver) =
             mpsc::channel::<ReplyEvent>(ChannelBufferSize);
+        
+        self.reply_sender = Some(sender.clone());
+        
+        self.reactive_resource_collectors.update_reply_sender(sender)?;
 
-        self.reply_sender = Some(sender);
-
-        self
+        Ok(())
     }
 
     /// 获取汇报发送器

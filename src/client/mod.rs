@@ -2,7 +2,7 @@ pub mod structs;
 pub mod traits;
 mod traits_impl;
 use crate::client::structs::client_value::HttpClient;
-use crate::client::structs::ref_reactive_child_clients::ReactiveChildClients;
+use crate::client::structs::reactive_child_clients::ReactiveChildClients;
 #[cfg(feature = "activate")]
 use crate::file_explorer::FileExplorer;
 use std::sync::Arc;
@@ -25,8 +25,7 @@ impl WebDavClient {
         #[cfg(feature = "activate")]
         {
             let receiver = child_clients.get_reactive_receiver();
-            let file_explorer = FileExplorer::new(receiver);
-            let file_explorer = file_explorer.start();
+            let file_explorer = FileExplorer::new();
 
             Self { child_clients, file_explorer }
         }
@@ -35,5 +34,14 @@ impl WebDavClient {
         {
             Self { child_clients }
         }
+    }
+
+    #[cfg(feature = "activate")]
+    pub fn start(&mut self) -> Result<(), String> {
+        println!("客户端启动中……");
+        self.file_explorer.start()?;
+
+        println!("客户端启动完成");
+        Ok(())
     }
 }
