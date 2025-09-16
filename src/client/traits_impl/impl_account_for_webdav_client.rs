@@ -15,17 +15,6 @@ impl Account for WebDavClient {
             .child_clients
             .add_account(base_url, username, password)?;
 
-        #[cfg(feature = "activate")]
-        {
-            let _ = self
-                .file_explorer
-                .reactive_resource_collectors
-                .insert(&key)
-                .map_err(|e| {
-                    AddAccountError::InsertResourceCollectorError(e)
-                })?;
-        }
-
         Ok(key)
     }
 

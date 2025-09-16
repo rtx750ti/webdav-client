@@ -1,6 +1,4 @@
 use crate::client::structs::client_key::TClientKey;
-#[cfg(feature = "activate")]
-use crate::file_explorer::TReplySender;
 use crate::resources_file::structs::resources_file::ResourcesFile;
 use chrono::{DateTime, FixedOffset};
 use reqwest::{Client, Url};
@@ -21,17 +19,6 @@ pub struct ResourceFileData {
 }
 
 impl ResourceFileData {
-    #[cfg(feature = "activate")]
-    pub fn to_resources_file(
-        self,
-        http_client: Client,
-        reply_sender: TReplySender,
-        client_key: TClientKey,
-    ) -> ResourcesFile {
-        ResourcesFile::new(self, http_client, reply_sender, client_key)
-    }
-
-    #[cfg(not(feature = "activate"))]
     pub fn to_resources_file(self, http_client: Client) -> ResourcesFile {
         ResourcesFile::new(self, http_client)
     }
