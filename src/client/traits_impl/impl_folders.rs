@@ -5,8 +5,6 @@ use crate::client::traits::folder::{
     Folders, TResourcesFileCollectionList,
 };
 use crate::client::{THttpClientArc, WebDavClient};
-#[cfg(feature = "activate")]
-use crate::file_explorer::TReplySender;
 use crate::public::enums::depth::Depth;
 use crate::public::traits::url_format::UrlFormat;
 use crate::public::utils::get_folders_public_impl::{
@@ -22,10 +20,6 @@ pub struct HandleResultArgs {
     pub(crate) results: Vec<Result<MultiStatus, GetFoldersError>>,
     pub(crate) http_client_arc: THttpClientArc,
     pub(crate) base_url: Url,
-    #[cfg(feature = "activate")]
-    pub(crate) reply_sender: TReplySender,
-    #[cfg(feature = "activate")]
-    pub(crate) client_key: TClientKey,
 }
 
 pub fn handle_result(
@@ -42,17 +36,6 @@ pub fn handle_result(
                     multi_status.to_resource_file_data(&arg.base_url)?;
 
                 for resource_file_data in resource_data_list {
-                    #[cfg(feature = "activate")]
-                    {
-                        resources_files.push(
-                            resource_file_data.to_resources_file(
-                                arg.http_client_arc.get_client(),
-                                arg.reply_sender.clone(),
-                                arg.client_key.clone(),
-                            ),
-                        )
-                    }
-
                     #[cfg(not(feature = "activate"))]
                     {
                         resources_files.push(
@@ -100,47 +83,17 @@ impl Folders for WebDavClient {
         let results: Vec<Result<MultiStatus, GetFoldersError>> =
             join_all(tasks).await;
 
-        #[cfg(not(feature = "activate"))]
-        {
-            let handle_result_args = HandleResultArgs {
-                results,
-                http_client_arc,
-                base_url: key.get_base_url(),
-            };
+        let handle_result_args = HandleResultArgs {
+            results,
+            http_client_arc,
+            base_url: key.get_base_url(),
+        };
 
-            let all_files =
-                crate::client::traits_impl::impl_folders::handle_result(
-                    handle_result_args,
-                )?;
+        let all_files =
+            crate::client::traits_impl::impl_folders::handle_result(
+                handle_result_args,
+            )?;
 
-            Ok(all_files)
-        }
-
-        #[cfg(feature = "activate")]
-        {
-            let resource_collector_option =
-                self.file_explorer.reactive_resource_collectors.get(key);
-
-            if let Some(resource_collector) = resource_collector_option {
-                let reply_sender = resource_collector.get_reply_sender();
-
-                let handle_result_args = HandleResultArgs {
-                    results,
-                    http_client_arc,
-                    base_url: key.get_base_url(),
-                    reply_sender,
-                    client_key: Arc::new(key.clone()),
-                };
-
-                let all_files = handle_result(handle_result_args)?;
-
-                Ok(all_files)
-            } else {
-                Err(GetFoldersError::NotFindResourceCollector(
-                    key.get_username(),
-                    key.get_base_url().to_string(),
-                ))
-            }
-        }
+        Ok(all_files)
     }
 }

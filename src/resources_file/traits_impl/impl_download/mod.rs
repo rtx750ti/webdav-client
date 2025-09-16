@@ -47,8 +47,6 @@ impl Download for ResourcesFile {
             save_absolute_path,
             http_client: http_client.clone(),
             download_config: download_config.clone(),
-            #[cfg(feature = "activate")]
-            reply_sender: self.get_reply_sender(),
         };
 
         handle_download(handle_download_args)

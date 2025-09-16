@@ -1,10 +1,7 @@
-use crate::download_config::DownloadConfig;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;
-#[cfg(feature = "activate")]
-use crate::file_explorer::TReplySender;
 use crate::resources_file::traits::download::TDownloadConfig;
 use crate::resources_file::traits_impl::impl_download::download::chunked_download::{chunked_download, is_chunked_download_blacklisted, ChunkedDownloadArgs};
 use crate::resources_file::traits_impl::impl_download::download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs};
@@ -14,8 +11,6 @@ pub struct HandleDownloadArgs {
     pub(crate) save_absolute_path: PathBuf,
     pub(crate) http_client: Client,
     pub(crate) download_config: TDownloadConfig,
-    #[cfg(feature = "activate")]
-    pub(crate) reply_sender: TReplySender,
 }
 
 pub async fn handle_download(
