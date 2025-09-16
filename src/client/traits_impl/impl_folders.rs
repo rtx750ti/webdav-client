@@ -16,6 +16,7 @@ use futures_util::future::join_all;
 use reqwest::Url;
 use std::sync::Arc;
 
+#[derive(Debug)]
 pub struct HandleResultArgs {
     pub(crate) results: Vec<Result<MultiStatus, GetFoldersError>>,
     pub(crate) http_client_arc: THttpClientArc,
@@ -25,7 +26,6 @@ pub struct HandleResultArgs {
 pub fn handle_result(
     arg: HandleResultArgs,
 ) -> Result<TResourcesFileCollectionList, GetFoldersError> {
-    // 这里只做简单收集，具体转换成 ResourcesFile 的逻辑你自己加
     let mut all_files = Vec::new();
 
     for res in arg.results {
@@ -36,14 +36,11 @@ pub fn handle_result(
                     multi_status.to_resource_file_data(&arg.base_url)?;
 
                 for resource_file_data in resource_data_list {
-                    #[cfg(not(feature = "activate"))]
-                    {
-                        resources_files.push(
-                            resource_file_data.to_resources_file(
-                                arg.http_client_arc.get_client(),
-                            ),
-                        )
-                    }
+                    resources_files.push(
+                        resource_file_data.to_resources_file(
+                            arg.http_client_arc.get_client(),
+                        ),
+                    )
                 }
                 all_files.push(resources_files)
             }
@@ -89,10 +86,7 @@ impl Folders for WebDavClient {
             base_url: key.get_base_url(),
         };
 
-        let all_files =
-            crate::client::traits_impl::impl_folders::handle_result(
-                handle_result_args,
-            )?;
+        let all_files = handle_result(handle_result_args)?;
 
         Ok(all_files)
     }
