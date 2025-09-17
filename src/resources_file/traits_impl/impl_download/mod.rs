@@ -5,7 +5,6 @@ use crate::resources_file::structs::resources_file::ResourcesFile;
 use crate::resources_file::traits::download::{Download, TDownloadConfig};
 use async_trait::async_trait;
 use std::sync::Arc;
-use crate::download_config::DownloadConfig;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::traits_impl::impl_download::download::handle_download::{handle_download, HandleDownloadArgs};
 

@@ -2,6 +2,8 @@ use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;
+#[cfg(feature = "reactive")]
+use crate::global_config::DEFAULT_LARGE_FILE_THRESHOLD;
 use crate::resources_file::traits::download::TDownloadConfig;
 use crate::resources_file::traits_impl::impl_download::download::chunked_download::{chunked_download, is_chunked_download_blacklisted, ChunkedDownloadArgs};
 use crate::resources_file::traits_impl::impl_download::download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs};
@@ -41,15 +43,43 @@ pub async fn handle_download(
         return Ok(());
     }
 
-    if let Some(size) = args.resource_file_data.size {
-        if size < args.download_config.large_file_threshold {
-            let _ = not_chunked_download(not_chunked_download_args)
-                .await
-                .map_err(|e| {
-                    format!("[not_chunked_download] {}", e.to_string())
-                })?;
+    #[cfg(not(feature = "reactive"))]
+    {
+        if let Some(size) = args.resource_file_data.size {
+            if size < args.download_config.large_file_threshold {
+                let _ = not_chunked_download(not_chunked_download_args)
+                    .await
+                    .map_err(|e| {
+                        format!("[not_chunked_download] {}", e.to_string())
+                    })?;
 
-            return Ok(());
+                return Ok(());
+            }
+        }
+    }
+
+    #[cfg(feature = "reactive")]
+    {
+        if let Some(size) = args.resource_file_data.size {
+            let download_config = args.download_config.get_current();
+
+            if let Some(config) = download_config {
+                if size < config.large_file_threshold {
+                    let _ =
+                        not_chunked_download(not_chunked_download_args)
+                            .await
+                            .map_err(|e| {
+                                format!(
+                                    "[not_chunked_download] {}",
+                                    e.to_string()
+                                )
+                            })?;
+
+                    return Ok(());
+                }
+            } else {
+                return Err("全局配置未初始化".to_string());
+            }
         }
     }
 

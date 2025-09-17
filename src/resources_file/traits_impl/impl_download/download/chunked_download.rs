@@ -1,4 +1,3 @@
-use crate::download_config::DownloadConfig;
 use crate::public::utils::handle_file::computed_semaphore_count;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use futures_util::future::join_all;

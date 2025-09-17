@@ -1,8 +1,8 @@
-use crate::download_config::DownloadConfig;
 use async_trait::async_trait;
 use std::sync::Arc;
+use crate::global_config::GlobalConfig;
 
-pub type TDownloadConfig = Arc<DownloadConfig>;
+pub type TDownloadConfig = Arc<GlobalConfig>;
 
 #[async_trait]
 pub trait Download {
