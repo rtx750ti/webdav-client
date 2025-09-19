@@ -1,5 +1,8 @@
 use crate::public::utils::handle_file::computed_semaphore_count;
+use crate::resources_file::structs::reactive_config::ReactiveConfig;
+use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
+use crate::resources_file::traits::download::TDownloadConfig;
 use futures_util::future::join_all;
 use reqwest::Client;
 use reqwest::header::RANGE;
@@ -11,7 +14,7 @@ use tokio::fs::File;
 use tokio::io::{AsyncSeekExt, AsyncWriteExt};
 use tokio::sync::Semaphore;
 use tokio::task::JoinHandle;
-use crate::resources_file::traits::download::TDownloadConfig;
+use crate::global_config::GlobalConfig;
 
 /// 分片黑名单，这些厂商不讲武德，拒绝分片请求，甚至拿1比特数据都要算下载了整个文件的流量
 const CHUNKED_DOWNLOAD_BLACKLIST: [&str; 1] =
@@ -63,6 +66,7 @@ struct DownloadTaskOption<'a> {
     start: u64,
     total_size: u64,
     file: File,
+    inner_state: &'a ReactiveFileProperty,
 }
 
 type DownloadTask = Vec<JoinHandle<Result<(), String>>>;
@@ -127,6 +131,7 @@ async fn build_download_tasks<'a>(
                         file.write_all(&chunk)
                             .await
                             .map_err(|e| e.to_string())?;
+
                         return Ok(());
                     }
                     Err(err) => {
@@ -150,7 +155,9 @@ pub struct ChunkedDownloadArgs {
     pub(crate) resource_file_data: Arc<ResourceFileData>,
     pub(crate) http_client: Client,
     pub(crate) save_absolute_path: PathBuf,
-    pub(crate) download_config: TDownloadConfig,
+    pub(crate) global_config: GlobalConfig,
+    pub(crate) inner_state: ReactiveFileProperty,
+    pub(crate) inner_config: ReactiveConfig,
 }
 
 pub async fn chunked_download(
@@ -199,6 +206,7 @@ pub async fn chunked_download(
             start,
             total_size,
             file,
+            inner_state: &args.inner_state,
         })
         .await?;
 

@@ -1,4 +1,5 @@
 use crate::client::structs::client_key::TClientKey;
+use crate::global_config::GlobalConfig;
 use crate::resources_file::structs::resources_file::ResourcesFile;
 use chrono::{DateTime, FixedOffset};
 use reqwest::{Client, Url};
@@ -19,7 +20,11 @@ pub struct ResourceFileData {
 }
 
 impl ResourceFileData {
-    pub fn to_resources_file(self, http_client: Client) -> ResourcesFile {
-        ResourcesFile::new(self, http_client)
+    pub fn to_resources_file(
+        self,
+        http_client: Client,
+        global_config: GlobalConfig,
+    ) -> ResourcesFile {
+        ResourcesFile::new(self, http_client, global_config)
     }
 }

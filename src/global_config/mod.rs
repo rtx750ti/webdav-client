@@ -3,7 +3,7 @@ use crate::reactive::ReactiveProperty;
 #[cfg(feature = "reactive")]
 use std::ops::Deref;
 
-pub const DEFAULT_LARGE_FILE_THRESHOLD: u64 = 20 * 1024 * 1024;
+pub const DEFAULT_LARGE_FILE_THRESHOLD: u64 = 5 * 1024 * 1024;
 
 #[cfg(not(feature = "reactive"))]
 #[derive(Clone, Debug)]

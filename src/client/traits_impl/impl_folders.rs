@@ -5,6 +5,7 @@ use crate::client::traits::folder::{
     Folders, TResourcesFileCollectionList,
 };
 use crate::client::{THttpClientArc, WebDavClient};
+use crate::global_config::GlobalConfig;
 use crate::public::enums::depth::Depth;
 use crate::public::traits::url_format::UrlFormat;
 use crate::public::utils::get_folders_public_impl::{
@@ -21,6 +22,7 @@ pub struct HandleResultArgs {
     pub(crate) results: Vec<Result<MultiStatus, GetFoldersError>>,
     pub(crate) http_client_arc: THttpClientArc,
     pub(crate) base_url: Url,
+    pub(crate) global_config: GlobalConfig,
 }
 
 pub fn handle_result(
@@ -39,6 +41,7 @@ pub fn handle_result(
                     resources_files.push(
                         resource_file_data.to_resources_file(
                             arg.http_client_arc.get_client(),
+                            arg.global_config.clone(),
                         ),
                     )
                 }
@@ -84,6 +87,7 @@ impl Folders for WebDavClient {
             results,
             http_client_arc,
             base_url: key.get_base_url(),
+            global_config: self.get_global_config(),
         };
 
         let all_files = handle_result(handle_result_args)?;

@@ -29,7 +29,6 @@ impl Download for ResourcesFile {
     async fn download(
         self,
         save_absolute_path: &str,
-        download_config: TDownloadConfig,
     ) -> Result<Arc<Self>, String> {
         let save_absolute_path =
             preprocessing_save_path(self.get_data(), save_absolute_path)
@@ -37,15 +36,15 @@ impl Download for ResourcesFile {
                 format!("[preprocessing_save_path] {}", e.to_string())
             })?;
 
-        println!("保存路径：{:?}", save_absolute_path);
-
         let http_client = self.get_http_client();
 
         let handle_download_args = HandleDownloadArgs {
-            resource_file_data: self.get_data().clone(),
+            resource_file_data: self.get_data(),
             save_absolute_path,
             http_client: http_client.clone(),
-            download_config: download_config.clone(),
+            global_config: self.get_global_config(),
+            inner_state: self.get_reactive_state(),
+            inner_config: self.get_reactive_config(),
         };
 
         handle_download(handle_download_args)

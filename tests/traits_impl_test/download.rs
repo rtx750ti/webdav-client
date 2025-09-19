@@ -11,6 +11,7 @@ use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::folder::Folders;
 use webdav_client::global_config::GlobalConfig;
 use webdav_client::public::enums::depth::Depth;
+use webdav_client::resources_file::structs::reactive_file_property::ReactiveFileProperty;
 use webdav_client::resources_file::traits::download::Download;
 
 #[tokio::test]
@@ -31,19 +32,76 @@ async fn test_download() -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    let config = GlobalConfig::default();
-    let config = Arc::new(config);
-
     for vec_resources_files in data {
         for resources_file in vec_resources_files {
             let _resources_file_arc = resources_file
                 .download(
                     "C:\\project\\rust\\quick-sync\\temp-download-files\\",
-                    config.clone(),
                 )
                 .await?;
         }
     }
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_download_progress_monitoring() -> Result<(), String> {
+    let client = WebDavClient::new();
+    let webdav_account = load_account(WEBDAV_ENV_PATH_2);
+
+    let key = client
+        .add_account(
+            &webdav_account.url,
+            &webdav_account.username,
+            &webdav_account.password,
+        )
+        .map_err(|e| e.to_string())?;
+
+    let data = client
+        .get_folders(
+            &key,
+            &vec!["./测试文件夹/新建文件夹/hula.exe".to_string()],
+            &Depth::One,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
+    for vec_resources_files in data {
+        for resources_file in vec_resources_files {
+            // 假设这里有你现成的获取方法：请替换为你代码里真实存在的方法名
+            let state = resources_file.get_reactive_state();
+
+            let mut watcher = state.get_download_bytes().watch();
+            let total = resources_file.get_data().size.unwrap();
+
+            // 启动监听
+            tokio::spawn({
+                // 可选：拿个名字快照用于打印
+                let name = state
+                    .get_reactive_name()
+                    .get_current()
+                    .unwrap_or_default();
+                async move {
+                    while let Ok(bytes) = watcher.changed().await {
+                        println!(
+                            "文件 [{}] 进度: {} bytes ({:.2}%)",
+                            name,
+                            bytes,
+                            (bytes as f64 / total as f64) * 100.0
+                        );
+                    }
+                }
+            });
+
+            // 调用现有的 download，不改签名
+            let _ = resources_file
+                .download(
+                    "C:\\project\\rust\\quick-sync\\temp-download-files\\",
+                )
+                .await?;
+        }
+    }
+
     Ok(())
 }
 

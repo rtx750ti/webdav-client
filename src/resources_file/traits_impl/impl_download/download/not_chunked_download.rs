@@ -3,12 +3,17 @@ use crate::resources_file::traits::download::TDownloadConfig;
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;
+use crate::global_config::GlobalConfig;
+use crate::resources_file::structs::reactive_config::ReactiveConfig;
+use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
 
 pub struct NotChunkedDownloadArgs {
     pub(crate) http_client: Client,
     pub(crate) resource_file_data: Arc<ResourceFileData>,
     pub(crate) save_absolute_path: PathBuf,
-    pub(crate) download_config: TDownloadConfig,
+    pub(crate) global_config: GlobalConfig,
+    pub(crate) inner_state: ReactiveFileProperty,
+    pub(crate) inner_config: ReactiveConfig,
 }
 
 pub async fn not_chunked_download(

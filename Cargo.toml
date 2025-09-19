@@ -7,11 +7,8 @@ edition = "2024"
 doctest = false
 
 [features]
-default = ["life-cycle", "activate", "reactive"]
+default = ["reactive"]
 reactive = []
-life-cycle = []
-activate = []
-show-test-detail = []
 
 [dependencies]
 tokio = { version = "1", features = [
