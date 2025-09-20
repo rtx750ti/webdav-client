@@ -35,7 +35,6 @@ pub struct ConfigData {
     pub timeout_secs: u64,         // 超时
     pub max_retries: u32,          // 最大重试次数
     pub large_file_threshold: u64, // 如果文件大于该值，则自动分片下载
-    pub max_thread_count: u32,     // 最大线程数
     pub enable_global_pause: bool, // 打开全局暂停功能
     pub global_pause: bool,        // 全局暂停标志
 }
@@ -48,7 +47,6 @@ impl Default for ConfigData {
             timeout_secs: 30,
             max_retries: 4,
             large_file_threshold: DEFAULT_LARGE_FILE_THRESHOLD,
-            max_thread_count: 128,
             enable_global_pause: false,
             global_pause: false,
         }
@@ -165,15 +163,6 @@ impl GlobalConfig {
         threshold: u64,
     ) -> Result<&Self, String> {
         self.update_field(|cfg| cfg.large_file_threshold = threshold)?;
-        Ok(self)
-    }
-
-    /// 设置最大线程数
-    pub fn set_max_thread_count(
-        &self,
-        count: u32,
-    ) -> Result<&Self, String> {
-        self.update_field(|cfg| cfg.max_thread_count = count)?;
         Ok(self)
     }
 }

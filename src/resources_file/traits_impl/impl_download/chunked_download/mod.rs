@@ -1,6 +1,7 @@
 mod file;
 mod http;
 mod task;
+pub mod black_list;
 
 use std::path::PathBuf;
 use crate::public::utils::handle_file::computed_semaphore_count;
@@ -14,17 +15,6 @@ use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::traits_impl::impl_download::chunked_download::file::{get_local_file_size, open_file};
 use crate::resources_file::traits_impl::impl_download::chunked_download::task::{build_download_tasks, join_all_and_handle_result, DownloadTaskArgs};
-
-/// 分片黑名单，这些厂商不讲武德，拒绝分片请求，甚至拿1比特数据都要算下载了整个文件的流量
-const CHUNKED_DOWNLOAD_BLACKLIST: [&str; 1] =
-    ["https://dav.jianguoyun.com/"];
-
-/// 查找地址是否在分片黑名单里
-pub fn is_chunked_download_blacklisted(base_url: &str) -> bool {
-    CHUNKED_DOWNLOAD_BLACKLIST
-        .iter()
-        .any(|blacklisted_url| base_url.starts_with(blacklisted_url))
-}
 
 const CHUNK_SIZE: u64 = 4 * 1024 * 1024;
 

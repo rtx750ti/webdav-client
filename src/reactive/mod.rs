@@ -60,14 +60,17 @@ where
     /// ```
     pub fn update(&self, new_value: T) -> Result<&Self, String> {
         if self.inner.is_dropped.load(Ordering::Relaxed) {
-            Err("响应式属性已被销毁".to_string())
-        } else {
-            self.inner
-                .sender
-                .send(Some(new_value))
-                .map_err(|e| format!("发送失败:{}", e.to_string()))?;
+            // eprintln!("[ReactiveProperty] 已销毁，忽略更新");
+            return Ok(self);
+        }
 
-            Ok(self)
+        match self.inner.sender.send(Some(new_value)) {
+            Ok(_) => Ok(self),
+            Err(_) => {
+                // 没有任何 Receiver 存在
+                // eprintln!("[ReactiveProperty] 无接收者，更新被忽略");
+                Ok(self)
+            }
         }
     }
 
@@ -139,17 +142,36 @@ where
     ///
     /// assert_eq!(prop.get_current().unwrap().count, 1);
     /// ```
-    pub fn update_field<F, R>(
-        &self,
-        updater: F,
-    ) -> Result<&Self, String>
+    pub fn update_field<F, R>(&self, updater: F) -> Result<&Self, String>
     where
         F: FnOnce(&mut T) -> R,
     {
-        let mut current =
-            self.get_current().ok_or("属性未初始化".to_string())?;
+        if self.inner.is_dropped.load(Ordering::Relaxed) {
+            // eprintln!("[ReactiveProperty] 已销毁，忽略 update_field");
+            return Ok(self);
+        }
+
+        let mut current = match self.get_current() {
+            Some(val) => val,
+            None => {
+                // eprintln!(
+                //     "[ReactiveProperty] 当前值不存在，忽略 update_field"
+                // );
+                return Ok(self);
+            }
+        };
+
         updater(&mut current);
-        self.update(current)
+
+        match self.inner.sender.send(Some(current)) {
+            Ok(_) => Ok(self),
+            Err(_) => {
+                // eprintln!(
+                //     "[ReactiveProperty] 无接收者，update_field 更新被忽略"
+                // );
+                Ok(self)
+            }
+        }
     }
 }
 
@@ -191,5 +213,10 @@ where
             None => Err("监听器已被销毁".to_string()),
             Some(value) => Ok(value.clone()),
         }
+    }
+
+    /// 同步获取当前值的引用。
+    pub fn borrow(&self) -> Option<T> {
+        self.receiver.borrow().clone()
     }
 }
