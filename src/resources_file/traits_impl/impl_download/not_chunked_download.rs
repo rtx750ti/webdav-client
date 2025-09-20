@@ -1,5 +1,4 @@
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
-use crate::resources_file::traits::download::TDownloadConfig;
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;

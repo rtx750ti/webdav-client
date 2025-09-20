@@ -1,12 +1,15 @@
-mod download;
+mod chunked_download;
+mod handle_download;
+mod not_chunked_download;
+
+use crate::resources_file::structs::resource_file_data::ResourceFileData;
+use crate::resources_file::structs::resources_file::ResourcesFile;
+use crate::resources_file::traits::download::Download;
+use async_trait::async_trait;
 use std::path::PathBuf;
 use std::str::FromStr;
-use crate::resources_file::structs::resources_file::ResourcesFile;
-use crate::resources_file::traits::download::{Download, TDownloadConfig};
-use async_trait::async_trait;
 use std::sync::Arc;
-use crate::resources_file::structs::resource_file_data::ResourceFileData;
-use crate::resources_file::traits_impl::impl_download::download::handle_download::{handle_download, HandleDownloadArgs};
+use crate::resources_file::traits_impl::impl_download::handle_download::{handle_download, HandleDownloadArgs};
 
 /// 预处理保存文件路径
 fn preprocessing_save_path(

@@ -1,5 +1,4 @@
 use crate::client::structs::client_key::ClientKey;
-use crate::global_config::GlobalConfig;
 use crate::public::enums::depth::Depth;
 use crate::public::utils::get_folders_public_impl::GetFoldersError;
 use crate::resources_file::structs::resources_file::ResourcesFile;

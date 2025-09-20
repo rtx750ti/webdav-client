@@ -7,7 +7,7 @@ use webdav_client::public::utils::get_folders_public_impl::GetFoldersError;
 
 #[tokio::test]
 async fn test_get_folders() -> Result<(), FoldersError> {
-    let mut client = WebDavClient::new();
+    let client = WebDavClient::new();
     let webdav_account = load_account(WEBDAV_ENV_PATH_1);
 
     let key = client
@@ -21,11 +21,7 @@ async fn test_get_folders() -> Result<(), FoldersError> {
         })?;
 
     let data = client
-        .get_folders(
-            &key,
-            &vec!["./".to_string()],
-            &Depth::One,
-        )
+        .get_folders(&key, &vec!["./".to_string()], &Depth::One)
         .await?;
 
     println!("获取的结果：{:?}", data);

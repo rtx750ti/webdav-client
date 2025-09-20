@@ -35,7 +35,7 @@ async fn test_add_account() -> Result<(), AccountError> {
 
 #[tokio::test]
 async fn test_remove_account() -> Result<(), AccountError> {
-    let mut client = WebDavClient::new();
+    let client = WebDavClient::new();
     let webdav_account = load_account(WEBDAV_ENV_PATH_1);
 
     let result = client.add_account(
@@ -72,7 +72,7 @@ async fn test_remove_account() -> Result<(), AccountError> {
 
 #[tokio::test]
 async fn test_get_http_client() -> Result<(), AccountError> {
-    let mut client = WebDavClient::new();
+    let client = WebDavClient::new();
     let webdav_account = load_account(WEBDAV_ENV_PATH_1);
 
     let key = client.add_account(
@@ -100,7 +100,7 @@ async fn test_get_http_client() -> Result<(), AccountError> {
 
 #[tokio::test]
 async fn test_remove_account_force() -> Result<(), AccountError> {
-    let mut client = WebDavClient::new();
+    let client = WebDavClient::new();
     let webdav_account = load_account(WEBDAV_ENV_PATH_1);
 
     match client.add_account(

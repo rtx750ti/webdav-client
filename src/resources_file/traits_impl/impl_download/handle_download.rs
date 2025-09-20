@@ -1,13 +1,13 @@
-use crate::resources_file::structs::resource_file_data::ResourceFileData;
-use reqwest::Client;
-use std::path::PathBuf;
-use std::sync::Arc;
 use crate::global_config::GlobalConfig;
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
+use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::traits::download::TDownloadConfig;
-use crate::resources_file::traits_impl::impl_download::download::chunked_download::{chunked_download, is_chunked_download_blacklisted, ChunkedDownloadArgs};
-use crate::resources_file::traits_impl::impl_download::download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs};
+use reqwest::Client;
+use std::path::PathBuf;
+use std::sync::Arc;
+use crate::resources_file::traits_impl::impl_download::chunked_download::{chunked_download, is_chunked_download_blacklisted, ChunkedDownloadArgs};
+use crate::resources_file::traits_impl::impl_download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs};
 
 pub struct HandleDownloadArgs {
     pub(crate) resource_file_data: Arc<ResourceFileData>,
@@ -21,7 +21,7 @@ pub struct HandleDownloadArgs {
 pub async fn handle_download(
     args: HandleDownloadArgs,
 ) -> Result<(), String> {
-    // 提前返回目录情况
+    // 这里不再处理任何文件夹的递归逻辑，交由库的使用者来处理递归情况
     if args.resource_file_data.is_dir {
         return Ok(());
     }
@@ -41,7 +41,7 @@ pub async fn handle_download(
         }
     }
 
-    // 默认使用分块下载
+    // 默认使用分片下载
     let chunked_download_args = ChunkedDownloadArgs {
         resource_file_data: args.resource_file_data,
         http_client: args.http_client,
@@ -56,7 +56,7 @@ pub async fn handle_download(
         .map_err(|e| format!("[chunked_download] {}", e))
 }
 
-/// 统一处理非分块下载
+/// 统一处理非分片下载
 async fn download_without_chunking(
     args: HandleDownloadArgs,
 ) -> Result<(), String> {
