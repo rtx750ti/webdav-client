@@ -134,7 +134,7 @@ async fn test_folders() -> Result<(), String> {
 
 | 语言 / 库                       | 基础操作 (GET/PUT/DELETE/MKCOL) | 许可证            |
 |------------------------------|-----------------------------|----------------|
-| Rust – 本库                    | ✅                           | MIT/Apache-2.0 |
+| Rust – 本库                    | ✅                           | AGPL 3.0 |
 | Java – Apache Jackrabbit     | ✅                           | Apache-2.0     |
 | Python – PyWebDAV / pydav    | ✅                           | ZPL 2.0        |
 | PHP – sabre/dav              | ✅                           | BSD            |
