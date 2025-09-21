@@ -1,7 +1,7 @@
 webdav-client是一个用 Rust 编写的高性能 WebDAV 客户端库，支持响应式模式（可选），并提供丰富的功能扩展。 适合需要
 文件同步、下载管理、断点续传 等场景的开发者。
 
-✨ 特性
+## ✨ 特性
 
 🔄 响应式支持：通过 reactive 特性开启，自动响应配置变化与事件流。✅
 
@@ -21,7 +21,7 @@ webdav-client是一个用 Rust 编写的高性能 WebDAV 客户端库，支持�
 
 🧩 策略交由开发者决定：冲突策略、并发策略等不做强制约束，完全交给使用者实现。✅
 
-📦 安装
+## 📦 安装（暂时使用github链接，后续会上传crates.io）
 在 Cargo.toml 中添加依赖：
 
 toml
@@ -35,6 +35,7 @@ webdav-client = { git = "https://github.com/rtx750ti/webdav-client", features = 
 🚀 快速开始
 
 下面是一个简单的下载示例：
+
 ``` rust
 #[tokio::test]
 async fn test_download() -> Result<(), String> {
@@ -67,7 +68,8 @@ let webdav_account = load_account(WEBDAV_ENV_PATH_2);
 }
 ```
 
-⚙️ 配置与扩展
+## ⚙️配置与扩展
+
 限速：可在创建客户端时配置速率限制。
 
 并发控制：支持自定义并发数与线程池。
@@ -86,6 +88,43 @@ let webdav_account = load_account(WEBDAV_ENV_PATH_2);
 并发策略（FIFO、优先级队列等） → 由开发者实现
 
 这样你可以根据业务需求自由扩展，而不是被框死在某种模式里。
+
+## 📂 关于目录递归与响应式架构
+
+为了实现真正的 **全局响应式机制**，本库不提供默认的全局递归目录遍历。  
+这是为了避免在响应式系统中引入不可控的深层状态依赖。
+
+如需递归获取目录内容，请使用 `get_folders` 方法：
+
+- ✅ 支持传入 **文件夹路径与文件路径混用**。
+- ✅ 支持指定递归深度（如 `Depth::One`、`Depth::Infinity`、`Depth::Zero`）。
+- ✅ 返回结构化的资源列表，适用于后续下载、同步等操作。
+
+这种设计使得开发者可以根据业务需求灵活控制递归行为，同时保持响应式系统的稳定性与可预测性。
+
+示例代码：
+```rust 
+#[tokio::test]
+async fn test_folders() -> Result<(), String> {
+    let client = WebDavClient::new();
+    let webdav_account = load_account(WEBDAV_ENV_PATH_2);
+
+    let key = client
+        .add_account(
+            &webdav_account.url,
+            &webdav_account.username,
+            &webdav_account.password,
+        )
+        .map_err(|e| e.to_string())?;
+
+    let _ = client
+        .get_folders(&key, &vec!["./文件夹1/".to_string(),"./文件夹2/core.exe".to_string()], &Depth::One)
+        .await
+        .map_err(|e| e.to_string())?;
+    
+    Ok(())
+}
+ ```
 
 ---
 
@@ -122,26 +161,28 @@ let webdav_account = load_account(WEBDAV_ENV_PATH_2);
 > - 本库的响应式机制通过 `reactive` 特性开启，关闭时即为普通 WebDAV 客户端。
 > - “断点续传”“进度”“钩子”“热更新”均为库的增强能力，便于构建下载器/同步器等复杂应用。
 ---
+
 ## 🧪 性能测试：响应式属性修改
 
 为了验证响应式属性的性能，下面是针对**一个**响应式属性进行的高频修改测试：
 
-| 项目 | 数值                        |
-|------|---------------------------|
-| 总修改次数 | 1,000,000 次               |
-| 总监听器数量 | 30 个                      |
-| 总耗时 | 307.24 ms                 |
+| 项目       | 数值                        |
+|----------|---------------------------|
+| 总修改次数    | 1,000,000 次               |
+| 总监听器数量   | 30 个                      |
+| 总耗时      | 307.24 ms                 |
 | 平均每次修改耗时 | ≈ 0.307 微秒                |
-| 物理内存使用 | 5,857,280 bytes ≈ 5.58 MB |
-| 虚拟内存使用 | 1,060,864 bytes ≈ 1.01 MB |
+| 物理内存使用   | 5,857,280 bytes ≈ 5.58 MB |
+| 虚拟内存使用   | 1,060,864 bytes ≈ 1.01 MB |
 
 > 测试环境：单线程 Tokio runtime，默认配置，无限速，无 IO 操作。
-> 
+>
 > 主机配置：14600k（cpu）+ 64g 5600hz（内存） + 7650gre（显卡）
-> 
+>
 > 测试代码可参考: `src/tests/traits_impl_test/download.rs >>> test_reactive_data()`
 
 ### 🔥 性能亮点
+
 - 响应式属性修改在百万级别操作下仍保持亚微秒级响应。
 - 内存占用极低，适合嵌入式或资源受限场景。
 - 支持高并发监听器，无明显性能瓶颈。
