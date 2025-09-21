@@ -4,6 +4,7 @@ use crate::reactive::ReactiveProperty;
 use std::ops::Deref;
 
 pub const DEFAULT_LARGE_FILE_THRESHOLD: u64 = 5 * 1024 * 1024;
+pub const DEFAULT_CHUNK_SIZE: u64 = 1024 * 1024 * 1024; // 1GB 默认分片大小
 
 #[cfg(not(feature = "reactive"))]
 #[derive(Clone, Debug)]
@@ -13,6 +14,8 @@ pub struct GlobalConfig {
     pub max_retries: u32,          // 最大重试次数
     pub large_file_threshold: u64, // 如果文件大于该值，则自动分片下载
     pub max_thread_count: u32,     // 最大线程数
+    pub chunk_size: u64,           // 分片大小（字节）
+    pub enable_chunked_upload: bool, // 启用分片上传
 }
 
 #[cfg(not(feature = "reactive"))]
@@ -24,6 +27,8 @@ impl Default for GlobalConfig {
             max_retries: 4,
             large_file_threshold: DEFAULT_LARGE_FILE_THRESHOLD,
             max_thread_count: 128,
+            chunk_size: DEFAULT_CHUNK_SIZE,
+            enable_chunked_upload: true,
         }
     }
 }
@@ -37,6 +42,8 @@ pub struct ConfigData {
     pub large_file_threshold: u64, // 如果文件大于该值，则自动分片下载
     pub enable_global_pause: bool, // 打开全局暂停功能
     pub global_pause: bool,        // 全局暂停标志
+    pub chunk_size: u64,           // 分片大小（字节）
+    pub enable_chunked_upload: bool, // 启用分片上传
 }
 
 #[cfg(feature = "reactive")]
@@ -49,6 +56,8 @@ impl Default for ConfigData {
             large_file_threshold: DEFAULT_LARGE_FILE_THRESHOLD,
             enable_global_pause: false,
             global_pause: false,
+            chunk_size: DEFAULT_CHUNK_SIZE,
+            enable_chunked_upload: true,
         }
     }
 }
@@ -164,6 +173,156 @@ impl GlobalConfig {
     ) -> Result<&Self, String> {
         self.update_field(|cfg| cfg.large_file_threshold = threshold)?;
         Ok(self)
+    }
+
+    /// 设置分片大小（字节）
+    ///
+    /// # 参数
+    /// * `size` - 分片大小，单位为字节。例如：1024*1024*1024 表示 1GB
+    ///
+    /// # 示例
+    /// ```rust
+    /// // 设置分片大小为 1GB
+    /// config.set_chunk_size(1024 * 1024 * 1024)?;
+    ///
+    /// // 设置分片大小为 512MB
+    /// config.set_chunk_size(512 * 1024 * 1024)?;
+    /// ```
+    pub fn set_chunk_size(&self, size: u64) -> Result<&Self, String> {
+        if size == 0 {
+            return Err("分片大小不能为0".to_string());
+        }
+        if size < 1024 * 1024 {
+            return Err("分片大小不能小于1MB".to_string());
+        }
+        self.update_field(|cfg| cfg.chunk_size = size)?;
+        Ok(self)
+    }
+
+    /// 启用分片上传
+    pub fn enable_chunked_upload(&self) -> Result<&Self, String> {
+        self.update_field(|cfg| cfg.enable_chunked_upload = true)?;
+        Ok(self)
+    }
+
+    /// 禁用分片上传
+    pub fn disable_chunked_upload(&self) -> Result<&Self, String> {
+        self.update_field(|cfg| cfg.enable_chunked_upload = false)?;
+        Ok(self)
+    }
+
+    /// 获取当前分片大小
+    pub fn get_chunk_size(&self) -> u64 {
+        self.get_current()
+            .map(|cfg| cfg.chunk_size)
+            .unwrap_or(DEFAULT_CHUNK_SIZE)
+    }
+
+    /// 判断是否启用了分片上传
+    pub fn is_chunked_upload_enabled(&self) -> bool {
+        self.get_current()
+            .map(|cfg| cfg.enable_chunked_upload)
+            .unwrap_or(true)
+    }
+
+    /// 计算文件需要的分片数量
+    ///
+    /// # 参数
+    /// * `file_size` - 文件大小（字节）
+    ///
+    /// # 返回
+    /// 返回需要的分片数量
+    ///
+    /// # 示例
+    /// ```rust
+    /// // 2.5GB 文件，1GB 分片大小 = 3 个分片
+    /// let chunks = config.calculate_chunk_count(2.5 * 1024.0 * 1024.0 * 1024.0 as u64);
+    /// assert_eq!(chunks, 3);
+    /// ```
+    pub fn calculate_chunk_count(&self, file_size: u64) -> u64 {
+        let chunk_size = self.get_chunk_size();
+        (file_size + chunk_size - 1) / chunk_size
+    }
+
+    /// 便捷方法：直接设置分片大小（MB）
+    ///
+    /// # 参数
+    /// * `size_mb` - 分片大小，单位为MB
+    ///
+    /// # 示例
+    /// ```rust
+    /// config.set_chunk_size_mb(512)?; // 设置为 512MB
+    /// config.set_chunk_size_mb(1024)?; // 设置为 1GB
+    /// ```
+    pub fn set_chunk_size_mb(&self, size_mb: u64) -> Result<&Self, String> {
+        self.set_chunk_size(size_mb * 1024 * 1024)
+    }
+
+    /// 便捷方法：直接设置分片大小（GB）
+    ///
+    /// # 参数
+    /// * `size_gb` - 分片大小，单位为GB
+    ///
+    /// # 示例
+    /// ```rust
+    /// config.set_chunk_size_gb(1)?; // 设置为 1GB
+    /// config.set_chunk_size_gb(2)?; // 设置为 2GB
+    /// ```
+    pub fn set_chunk_size_gb(&self, size_gb: u64) -> Result<&Self, String> {
+        self.set_chunk_size(size_gb * 1024 * 1024 * 1024)
+    }
+
+    /// 获取分片大小（MB）
+    pub fn get_chunk_size_mb(&self) -> f64 {
+        self.get_chunk_size() as f64 / 1024.0 / 1024.0
+    }
+
+    /// 获取分片大小（GB）
+    pub fn get_chunk_size_gb(&self) -> f64 {
+        self.get_chunk_size() as f64 / 1024.0 / 1024.0 / 1024.0
+    }
+
+    /// 智能分片建议：根据文件大小推荐分片大小
+    ///
+    /// # 参数
+    /// * `file_size` - 文件大小（字节）
+    ///
+    /// # 返回
+    /// 推荐的分片大小（字节），最小为1MB
+    pub fn suggest_chunk_size(&self, file_size: u64) -> u64 {
+        if file_size < 100 * 1024 * 1024 {
+            // 小于100MB：使用最小分片大小1MB（但通常建议简单上传）
+            1024 * 1024 // 1MB
+        } else if file_size < 1024 * 1024 * 1024 {
+            // 100MB-1GB：256MB分片
+            256 * 1024 * 1024
+        } else if file_size < 10 * 1024 * 1024 * 1024 {
+            // 1GB-10GB：512MB分片
+            512 * 1024 * 1024
+        } else {
+            // 大于10GB：1GB分片
+            1024 * 1024 * 1024
+        }
+    }
+
+    /// 判断文件是否建议使用分片上传
+    ///
+    /// # 参数
+    /// * `file_size` - 文件大小（字节）
+    ///
+    /// # 返回
+    /// true 表示建议分片上传，false 表示建议简单上传
+    pub fn should_use_chunked_upload(&self, file_size: u64) -> bool {
+        file_size >= 100 * 1024 * 1024 // 100MB以上建议分片
+    }
+
+    /// 应用智能分片建议
+    ///
+    /// # 参数
+    /// * `file_size` - 文件大小（字节）
+    pub fn apply_smart_chunking(&self, file_size: u64) -> Result<&Self, String> {
+        let suggested_size = self.suggest_chunk_size(file_size);
+        self.set_chunk_size(suggested_size)
     }
 }
 
