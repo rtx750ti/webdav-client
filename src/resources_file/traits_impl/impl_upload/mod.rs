@@ -1,6 +1,7 @@
 mod handle_upload;
-mod simple_upload;
-mod chunked_upload;
+pub mod simple_upload;
+pub mod chunked_upload;
+pub mod local_file_upload;
 
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::structs::resources_file::ResourcesFile;
