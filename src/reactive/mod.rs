@@ -195,6 +195,7 @@ impl<T> Drop for Inner<T> {
 /// 每次调用 [`changed`] 方法都会等待值的变化并返回新值。
 pub struct PropertyWatcher<T> {
     receiver: watch::Receiver<Option<T>>,
+    #[allow(dead_code)]
     inner: Arc<Inner<T>>,
 }
 

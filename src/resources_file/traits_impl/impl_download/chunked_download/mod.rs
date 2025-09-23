@@ -1,7 +1,7 @@
-mod file;
-mod http;
-mod task;
 pub mod black_list;
+mod file;
+mod http_stream;
+mod task;
 
 use std::path::PathBuf;
 use crate::public::utils::handle_file::computed_semaphore_count;
@@ -23,6 +23,16 @@ pub enum LocalFileDownloadState {
     Downloaded,
     /// 未完成
     Incomplete(u64),
+}
+
+pub fn set_initial_progress(
+    inner_state: &ReactiveFileProperty,
+    start: u64,
+) -> Result<(), String> {
+    inner_state.download_bytes.update_field(|download_bytes| {
+        *download_bytes = start as usize;
+    })?;
+    Ok(())
 }
 
 pub struct ChunkedDownloadArgs {
@@ -55,6 +65,8 @@ pub async fn chunked_download(
         LocalFileDownloadState::Incomplete(size) => size,
     };
 
+    set_initial_progress(&args.inner_state, start)?;
+
     // 打开文件（续传时用 append + write）
     let file = open_file(&args.save_absolute_path).await?;
 
@@ -71,6 +83,8 @@ pub async fn chunked_download(
         total_size,
         file,
         inner_state: &args.inner_state,
+        global_config: args.global_config,
+        inner_config: args.inner_config,
     };
 
     let (tasks, mut args) =

@@ -37,6 +37,7 @@ futures-util = { version = "0.3", default-features = false, features = ["sink"] 
 thiserror = "2.0.16"
 url = "2.5.4"
 memory-stats = "1.2.0"
+bytes = "1.10.1"
 
 
 [dev-dependencies]

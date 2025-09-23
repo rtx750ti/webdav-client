@@ -5,10 +5,12 @@ use reqwest::Client;
 use tokio::fs::File;
 use tokio::sync::Semaphore;
 use tokio::task::JoinHandle;
+use crate::global_config::GlobalConfig;
+use crate::resources_file::structs::reactive_config::ReactiveConfig;
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
 use crate::resources_file::traits_impl::impl_download::chunked_download::CHUNK_SIZE;
 use crate::resources_file::traits_impl::impl_download::chunked_download::file::clone_file_handle;
-use crate::resources_file::traits_impl::impl_download::chunked_download::http::{download_range_file, DownloadRangeFileArgs};
+use crate::resources_file::traits_impl::impl_download::chunked_download::http_stream::{download_range_file, DownloadRangeFileArgs};
 
 pub fn computed_range_header(total_size: u64, start: u64) -> String {
     let end = min(start + CHUNK_SIZE - 1, total_size - 1);
@@ -25,9 +27,38 @@ pub struct DownloadTaskArgs<'a> {
     pub total_size: u64,
     pub file: File,
     pub inner_state: &'a ReactiveFileProperty,
+    pub global_config: GlobalConfig,
+    pub inner_config: ReactiveConfig,
 }
 
 pub type DownloadTasks = Vec<JoinHandle<Result<(), String>>>;
+
+struct DownloadTaskContext {
+    pub http_client: Client,
+    pub file_url: String,
+    pub range_header_str: String,
+    pub file: File,
+    pub start: u64,
+    pub inner_state: ReactiveFileProperty,
+    pub global_config: GlobalConfig,
+    pub inner_config: ReactiveConfig,
+}
+
+impl DownloadTaskContext {
+    fn into_range_file_args<'a>(&'a mut self) -> DownloadRangeFileArgs<'a> {
+        DownloadRangeFileArgs {
+            http_client: &self.http_client,
+            range_header_str: &self.range_header_str,
+            file_url: &self.file_url,
+            file: &mut self.file,
+            start: self.start,
+            inner_state: self.inner_state.clone(),
+            global_config: self.global_config.clone(),
+            inner_config: self.inner_config.clone(),
+        }
+    }
+}
+
 
 /// 构建下载任务
 pub async fn build_download_tasks<'a>(
@@ -40,37 +71,33 @@ pub async fn build_download_tasks<'a>(
         let range_header_str =
             computed_range_header(args.total_size, args.start);
 
-        let semaphore = Arc::clone(&args.semaphore); // 克隆一个Arc指针，传递给异步任务
+        let cloned_file_handle = clone_file_handle(&args.file).await?;
 
-        let http_client = args.http_client.clone();
-        let file_url = args.file_url.to_string();
+        let mut context = DownloadTaskContext {
+            http_client: args.http_client.clone(),
+            file_url: args.file_url.to_string(),
+            range_header_str,
+            file: cloned_file_handle,
+            start: args.start,
+            inner_state: args.inner_state.clone(),
+            global_config: args.global_config.clone(),
+            inner_config: args.inner_config.clone(),
+        };
 
-        let mut file = clone_file_handle(&args.file).await?;
-
-        let start = args.start;
+        let semaphore = Arc::clone(&args.semaphore);
 
         let task = tokio::task::spawn(async move {
             // 使用Semaphore来限制并发数量
-            let permit = semaphore.acquire().await;
+            let _permit = semaphore
+                .acquire_owned()
+                .await
+                .map_err(|e| format!("无法获取并发许可: {}", e))?;
 
-            return match permit {
-                Ok(_) => {
-                    let download_range_file_args = DownloadRangeFileArgs {
-                        http_client: &http_client,
-                        range_header_str: &range_header_str,
-                        file_url: &file_url,
-                        file: &mut file,
-                        start,
-                    };
+            let download_range_file_args = context.into_range_file_args();
 
-                    download_range_file(download_range_file_args).await?;
+            download_range_file(download_range_file_args).await?;
 
-                    Ok(())
-                }
-                Err(err) => {
-                    Err(format!("无法获取并发许可: {}", err.to_string()))
-                }
-            };
+            Ok(())
         });
 
         tasks.push(task);
