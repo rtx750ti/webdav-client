@@ -4,6 +4,7 @@ use crate::reactive::ReactiveProperty;
 pub struct ReactiveFileProperty {
     pub name: ReactiveProperty<String>,
     pub download_bytes: ReactiveProperty<usize>,
+    pub file_lock: ReactiveProperty<bool>, // 文件锁，主要用于限制下载时用户尝试修改文件名的操作
 }
 
 impl ReactiveFileProperty {
@@ -11,6 +12,7 @@ impl ReactiveFileProperty {
         Self {
             name: ReactiveProperty::new(name),
             download_bytes: ReactiveProperty::new(0),
+            file_lock: ReactiveProperty::new(false),
         }
     }
 
@@ -21,5 +23,9 @@ impl ReactiveFileProperty {
 
     pub fn get_download_bytes(&self) -> &ReactiveProperty<usize> {
         &self.download_bytes
+    }
+
+    pub fn get_file_lock(&self) -> &ReactiveProperty<bool> {
+        &self.file_lock
     }
 }

@@ -78,6 +78,7 @@ async fn test_download_progress_monitoring() -> Result<(), String> {
                     .get_reactive_name()
                     .get_current()
                     .unwrap_or_default();
+
                 async move {
                     while let Ok(bytes) = watcher.changed().await {
                         println!(
@@ -88,6 +89,100 @@ async fn test_download_progress_monitoring() -> Result<(), String> {
                         );
                     }
                 }
+            });
+
+            // 调用现有的 download，不改签名
+            let _ = resources_file
+                .download(
+                    "C:\\project\\rust\\quick-sync\\temp-download-files\\",
+                )
+                .await?;
+        }
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_download_pause() -> Result<(), String> {
+    let client = WebDavClient::new();
+    let webdav_account = load_account(WEBDAV_ENV_PATH_2);
+
+    let key = client
+        .add_account(
+            &webdav_account.url,
+            &webdav_account.username,
+            &webdav_account.password,
+        )
+        .map_err(|e| e.to_string())?;
+
+    let data = client
+        .get_folders(
+            &key,
+            &vec!["./测试文件夹/新建文件夹/hula.exe".to_string()],
+            &Depth::One,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
+    let global_config = client.get_global_config();
+
+    global_config.enable_pause_switch()?;
+    println!("配置：{:?}", global_config.get_current());
+
+    tokio::spawn(async move {
+        tokio::time::sleep(Duration::from_secs(5)).await;
+
+        global_config.try_pause().unwrap();
+
+        tokio::time::sleep(Duration::from_secs(6)).await;
+
+        global_config.try_resume().unwrap();
+    });
+
+    for vec_resources_files in data {
+        for resources_file in vec_resources_files {
+            // 假设这里有你现成的获取方法：请替换为你代码里真实存在的方法名
+            let state = resources_file.get_reactive_state();
+
+            let mut watcher = state.get_download_bytes().watch();
+            let total = resources_file.get_data().size.unwrap();
+
+            let config = resources_file.get_reactive_config();
+            let config_watcher = config.watch();
+
+            // 启动监听
+            tokio::spawn({
+                // 可选：拿个名字快照用于打印
+                let name = state
+                    .get_reactive_name()
+                    .get_current()
+                    .unwrap_or_default();
+
+                async move {
+                    while let Ok(bytes) = watcher.changed().await {
+                        println!(
+                            "文件 [{}] 进度: {} bytes ({:.2}%)",
+                            name,
+                            bytes,
+                            (bytes as f64 / total as f64) * 100.0
+                        );
+                    }
+                }
+            });
+
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_secs(3)).await;
+
+                config.update_field(|data| data.pause = true).unwrap();
+
+                let d = config.get_current().unwrap();
+
+                println!("内部配置：{:?}", d);
+
+                tokio::time::sleep(Duration::from_secs(2)).await;
+
+                config.update_field(|data| data.pause = false).unwrap();
             });
 
             // 调用现有的 download，不改签名

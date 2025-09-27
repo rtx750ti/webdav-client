@@ -64,7 +64,6 @@ async fn handle_bytes_stream<'a>(
     Ok(())
 }
 
-
 pub struct DownloadRangeFileArgs<'a> {
     pub(crate) http_client: &'a Client,
     pub range_header_str: &'a str,
@@ -94,9 +93,29 @@ pub async fn download_range_file<'a>(
 
     let mut current_file_seek_start = args.start;
 
+    let global_config = &args.global_config;
+    let mut global_config_watch = global_config.watch();
+
+    let inner_config = &args.inner_config;
+    let mut inner_config_watch = inner_config.watch();
+
     while let Some(downloaded_chunk) = download_stream.next().await {
         let chunk = downloaded_chunk
             .map_err(|e| format!("[download_stream.next()]{}", e))?;
+
+        while global_config.is_paused() || inner_config.is_paused() {
+            if global_config.is_paused() {
+                println!("[分片下载] 全局暂停");
+                let _ = global_config_watch.changed().await;
+                println!("[分片下载]  全局启动");
+            }
+
+            if inner_config.is_paused() {
+                println!("[分片下载] 内部暂停");
+                let _ = inner_config_watch.changed().await;
+                println!("[分片下载] 内部启动");
+            }
+        }
 
         let chunk_length = chunk.len() as u64;
 
