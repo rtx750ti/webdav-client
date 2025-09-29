@@ -1,5 +1,5 @@
 use crate::client::structs::client_key::TClientKey;
-use crate::global_config::GlobalConfig;
+use crate::global_config::global_config::GlobalConfig;
 #[cfg(feature = "reactive")]
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
 #[cfg(feature = "reactive")]
@@ -110,7 +110,7 @@ impl ResourcesFile {
 
         if force {
             let file_lock_option = file_lock_watcher.borrow();
-            return if let Some(file_lock_value) = file_lock_option {
+            return if let Some(_file_lock_value) = file_lock_option {
                 file_lock.update_field(|file_lock| *file_lock = true)?;
                 Ok(())
             } else {

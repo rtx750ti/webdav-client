@@ -150,7 +150,7 @@ async fn test_download_pause() -> Result<(), String> {
             let total = resources_file.get_data().size.unwrap();
 
             let config = resources_file.get_reactive_config();
-            let config_watcher = config.watch();
+            let _config_watcher = config.watch();
 
             // 启动监听
             tokio::spawn({
@@ -253,7 +253,7 @@ async fn test_reactive_data() -> Result<(), String> {
 
             tokio::spawn(async move {
                 match watch_clone.changed().await {
-                    Ok(new_value) => {
+                    Ok(_new_value) => {
                         // println!("监听器 {} 收到新名称: {}", i, new_value);
                         let _ = tx_clone.send(i).await;
                     }
@@ -271,7 +271,7 @@ async fn test_reactive_data() -> Result<(), String> {
         let start = Instant::now();
 
         // 更新名称以触发监听器
-        for i in 0..1_000_000 {
+        for _i in 0..1_000_000 {
             let new_name = format!("{:?}", random_bytes_2mb());
             name.update(new_name.clone())
                 .map_err(|e| format!("更新失败: {}", e))?;

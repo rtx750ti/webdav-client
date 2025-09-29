@@ -1,4 +1,4 @@
-use crate::resources_file::traits_impl::impl_download::chunked_download::LocalFileDownloadState;
+use crate::resources_file::impl_traits::impl_download::chunked_download::LocalFileDownloadState;
 use std::path::PathBuf;
 use tokio::fs;
 use tokio::fs::File;

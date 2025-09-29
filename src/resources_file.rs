@@ -1,3 +1,3 @@
 pub mod structs;
 pub mod traits;
-mod traits_impl;
+mod impl_traits;

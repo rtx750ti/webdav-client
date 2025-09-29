@@ -7,7 +7,7 @@ use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::structs::resources_file::ResourcesFile;
 use crate::resources_file::traits::download::Download;
-use crate::resources_file::traits_impl::impl_download::handle_download::{
+use crate::resources_file::impl_traits::impl_download::handle_download::{
     handle_download, HandleDownloadArgs,
 };
 use async_trait::async_trait;

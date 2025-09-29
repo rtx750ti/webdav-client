@@ -1,4 +1,4 @@
-use crate::reactive::ReactiveProperty;
+use crate::reactive::reactive::ReactiveProperty;
 
 #[derive(Debug, Clone)]
 pub struct ReactiveFileProperty {

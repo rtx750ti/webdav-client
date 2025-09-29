@@ -1,11 +1,11 @@
-use crate::global_config::GlobalConfig;
+use crate::global_config::global_config::GlobalConfig;
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::traits::download::TDownloadConfig;
-use crate::resources_file::traits_impl::impl_download::chunked_download::black_list::is_chunked_download_blacklisted;
-use crate::resources_file::traits_impl::impl_download::chunked_download::{chunked_download, ChunkedDownloadArgs};
-use crate::resources_file::traits_impl::impl_download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs};
+use crate::resources_file::impl_traits::impl_download::chunked_download::black_list::is_chunked_download_blacklisted;
+use crate::resources_file::impl_traits::impl_download::chunked_download::{chunked_download, ChunkedDownloadArgs};
+use crate::resources_file::impl_traits::impl_download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs};
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;

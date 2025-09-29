@@ -1,5 +1,5 @@
-use crate::reactive::ReactiveProperty;
 use std::ops::Deref;
+use crate::reactive::reactive::ReactiveProperty;
 
 #[derive(Debug, Clone)]
 pub struct ReactiveConfigData {

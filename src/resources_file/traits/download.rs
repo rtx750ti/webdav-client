@@ -1,4 +1,4 @@
-use crate::global_config::GlobalConfig;
+use crate::global_config::global_config::GlobalConfig;
 use async_trait::async_trait;
 use std::sync::Arc;
 

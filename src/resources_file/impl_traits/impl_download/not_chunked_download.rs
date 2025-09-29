@@ -1,4 +1,4 @@
-use crate::global_config::GlobalConfig;
+use crate::global_config::global_config::GlobalConfig;
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;

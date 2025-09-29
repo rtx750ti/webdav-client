@@ -1,9 +1,9 @@
-use crate::global_config::GlobalConfig;
+use crate::global_config::global_config::GlobalConfig;
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
-use crate::resources_file::traits_impl::impl_download::chunked_download::file::clone_file_handle;
-use crate::resources_file::traits_impl::impl_download::chunked_download::http_stream::{download_range_file, DownloadRangeFileArgs};
-use crate::resources_file::traits_impl::impl_download::chunked_download::CHUNK_SIZE;
+use crate::resources_file::impl_traits::impl_download::chunked_download::file::clone_file_handle;
+use crate::resources_file::impl_traits::impl_download::chunked_download::http_stream::{download_range_file, DownloadRangeFileArgs};
+use crate::resources_file::impl_traits::impl_download::chunked_download::CHUNK_SIZE;
 use futures_util::future::join_all;
 use reqwest::Client;
 use std::cmp::min;

@@ -4,13 +4,13 @@ pub mod enums;
 pub mod webdav_request;
 
 mod format_base_url;
-mod traits_impl;
+mod impl_traits;
 
 use crate::client::structs::client_value::HttpClient;
 use crate::client::structs::reactive_child_clients::ReactiveChildClients;
-use crate::global_config::GlobalConfig;
 use std::sync::Arc;
 use tokio::spawn;
+use crate::global_config::global_config::GlobalConfig;
 
 pub type THttpClientArc = Arc<HttpClient>; // 这里的Arc是共享的，并且永远不会被修改，只会被删除，所以可以设计无锁结构
 
