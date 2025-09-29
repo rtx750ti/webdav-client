@@ -1,6 +1,11 @@
 pub mod structs;
 pub mod traits;
+pub mod enums;
+pub mod webdav_request;
+
+mod format_base_url;
 mod traits_impl;
+
 use crate::client::structs::client_value::HttpClient;
 use crate::client::structs::reactive_child_clients::ReactiveChildClients;
 use crate::global_config::GlobalConfig;

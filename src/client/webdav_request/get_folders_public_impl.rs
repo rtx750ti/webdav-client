@@ -1,12 +1,12 @@
 use crate::client::structs::raw_file_xml::MultiStatus;
 use crate::client::traits::account::AccountError;
-use crate::public::enums::depth::Depth;
-use crate::public::enums::methods::WebDavMethod;
-use crate::public::traits::url_format::UrlFormatError;
 use crate::resources_file::traits::to_resource_file_data::ToResourceFileDataError;
 use quick_xml::de::from_str;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use reqwest::Client;
+use crate::client::enums::depth::Depth;
+use crate::client::enums::webdav_method::WebDavMethod;
+use crate::client::traits::url_format::UrlFormatError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum GetFoldersError {

@@ -6,10 +6,10 @@ use rand::{thread_rng, RngCore};
 use std::time::Duration;
 #[cfg(feature = "reactive")]
 use tokio::time::Instant;
+use webdav_client::client::enums::depth::Depth;
 use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::folder::Folders;
 use webdav_client::client::WebDavClient;
-use webdav_client::public::enums::depth::Depth;
 use webdav_client::resources_file::traits::download::Download;
 
 #[tokio::test]

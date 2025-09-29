@@ -1,8 +1,7 @@
 use crate::client::structs::client_key::ClientKey;
+use crate::client::traits::url_format::{FormatUrlPathError, UrlFormat, UrlFormatError};
 use crate::client::WebDavClient;
-use crate::public::traits::url_format::{
-    FormatUrlPathError, UrlFormat, UrlFormatError,
-};
+
 
 impl UrlFormat for WebDavClient {
     fn format_url_path(

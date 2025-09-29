@@ -1,9 +1,16 @@
 use crate::client::THttpClientArc;
-use crate::public::utils::{
-    encrypt_str, format_base_url, gen_http_client,
-};
+use base64::Engine;
+use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use reqwest::{Client, Url};
+use sha2::{Digest, Sha256};
 use std::sync::Arc;
+use crate::client::format_base_url::format_base_url;
+
+pub fn encrypt_str(data: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(data.as_bytes());
+    format!("{:x}", hasher.finalize())
+}
 
 #[derive(Debug, Clone)]
 pub struct HttpClient {
@@ -21,8 +28,8 @@ impl HttpClient {
     ) -> Result<Self, String> {
         let encrypted_username = encrypt_str(username);
         let encrypted_password = encrypt_str(password);
-        let base_url = format_base_url(base_url)
-            .map_err(|e| e.to_string())?;
+        let base_url =
+            format_base_url(base_url).map_err(|e| e.to_string())?;
         let client = gen_http_client(username, password)
             .unwrap_or(Client::default());
 
@@ -53,4 +60,27 @@ impl PartialEq for HttpClient {
         self.encrypted_username.eq(&other.encrypted_username)
             && self.encrypted_password.eq(&other.encrypted_password)
     }
+}
+
+pub fn gen_http_client(
+    username: &str,
+    password: &str,
+) -> Result<Client, String> {
+    let mut headers = HeaderMap::new();
+
+    let token = base64::engine::general_purpose::STANDARD
+        .encode(format!("{username}:{password}"));
+
+    let auth_val = HeaderValue::from_str(&format!("Basic {token}"))
+        .map_err(|e| e.to_string())?;
+
+    headers.insert(AUTHORIZATION, auth_val);
+
+    let client = Client::builder()
+        .http1_only()
+        .default_headers(headers)
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    Ok(client)
 }

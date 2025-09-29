@@ -1,8 +1,8 @@
 use crate::client::structs::client_key::ClientKey;
-use crate::public::enums::depth::Depth;
-use crate::public::utils::get_folders_public_impl::GetFoldersError;
+use crate::client::webdav_request::get_folders_public_impl::GetFoldersError;
 use crate::resources_file::structs::resources_file::ResourcesFile;
 use async_trait::async_trait;
+use crate::client::enums::depth::Depth;
 
 #[derive(Debug, thiserror::Error)]
 pub enum FoldersError {
