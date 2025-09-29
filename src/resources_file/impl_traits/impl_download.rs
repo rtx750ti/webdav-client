@@ -2,14 +2,14 @@ mod chunked_download;
 mod handle_download;
 mod not_chunked_download;
 
+use crate::resources_file::impl_traits::impl_download::handle_download::{
+    HandleDownloadArgs, handle_download,
+};
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::structs::resources_file::ResourcesFile;
 use crate::resources_file::traits::download::Download;
-use crate::resources_file::impl_traits::impl_download::handle_download::{
-    handle_download, HandleDownloadArgs,
-};
 use async_trait::async_trait;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -33,56 +33,6 @@ fn preprocessing_save_path(
     }
 }
 
-fn watch_self_reactive_property(
-    inner_config: ReactiveConfig,
-    inner_state: ReactiveFileProperty,
-) -> JoinHandle<()> {
-    let mut config_watcher = inner_config.watch();
-    let mut download_bytes_watcher = inner_state.download_bytes.watch();
-    let file_lock = inner_state.file_lock;
-
-    let current_file_name = inner_state.name.get_current();
-
-    tokio::spawn(async move {
-        loop {
-            if let Some(file_lock) = file_lock.get_current() {
-                if !*file_lock {
-                    break;
-                }
-            } else {
-                println!(
-                    "[watch_self_reactive_property] 文件[{:?}]无法获取锁",
-                    current_file_name
-                );
-                break;
-            }
-
-            select! {
-                res = config_watcher.changed() => {
-                    match res {
-                        Ok(config) => {
-                            println!("文件[{:?}]配置更新{:?}",current_file_name,config);
-                        }
-                        Err(err) => {
-                            println!("文件[{:?}]配置监听器异常:{}",current_file_name,err);
-                            break;
-                        },
-                    }
-                },
-                res = download_bytes_watcher.changed() => {
-                    match res {
-                        Ok(_) => {}
-                        Err(err) => {
-                            println!("文件[{:?}]下载出错:{}",current_file_name,err);
-                            break;
-                        },
-                    }
-                }
-            }
-        }
-    })
-}
-
 fn watch_self_file_lock(
     inner_state: ReactiveFileProperty,
 ) -> JoinHandle<()> {
@@ -104,7 +54,7 @@ impl Download for ResourcesFile {
         save_absolute_path: &str,
     ) -> Result<Arc<Self>, String> {
         let handle_mounted =
-            async || -> Result<(JoinHandle<()>, JoinHandle<()>), String> {
+            async || -> Result<(JoinHandle<()>), String> {
                 // 以下顺序不能乱
                 // 1、监听文件锁
                 let watching_file_lock =
@@ -113,23 +63,17 @@ impl Download for ResourcesFile {
                 // 2、获取资源文件锁
                 self.lock_file(false).await?; // 这里可能获取失败，如果获取失败就不下载，交给使用者来处理是否继续
 
-                // 3、创建响应式监听任务，这个顺序不能错，必须得让锁为true才行，如果不提前监听，则上一步无法加锁
-                let watching_property_task = watch_self_reactive_property(
-                    self.get_reactive_config(),
-                    self.get_reactive_state(),
-                );
-
-                Ok((watching_file_lock, watching_property_task))
+                Ok(watching_file_lock)
             };
 
-        let (watching_file_lock, watching_property_task) =
+        let watching_file_lock =
             handle_mounted().await?;
 
         let save_absolute_path =
             preprocessing_save_path(self.get_data(), save_absolute_path)
                 .map_err(|e| {
-                    format!("[preprocessing_save_path] {}", e.to_string())
-                })?;
+                format!("[preprocessing_save_path] {}", e.to_string())
+            })?;
 
         let http_client = self.get_http_client();
 
@@ -148,9 +92,7 @@ impl Download for ResourcesFile {
             // 以下顺序不能乱
             // 1、解锁资源文件
             self.unlock_file(false).await?;
-            // 2、不管成功和失败，必须销毁监听任务
-            watching_property_task.abort();
-            // 3、最后再销毁文件锁监听器
+            // 2、最后再销毁文件锁监听器
             watching_file_lock.abort();
 
             Ok(())

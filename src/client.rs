@@ -1,6 +1,6 @@
+pub mod enums;
 pub mod structs;
 pub mod traits;
-pub mod enums;
 pub mod webdav_request;
 
 mod format_base_url;
@@ -8,9 +8,9 @@ mod impl_traits;
 
 use crate::client::structs::client_value::HttpClient;
 use crate::client::structs::reactive_child_clients::ReactiveChildClients;
+use crate::global_config::global_config::GlobalConfig;
 use std::sync::Arc;
 use tokio::spawn;
-use crate::global_config::global_config::GlobalConfig;
 
 pub type THttpClientArc = Arc<HttpClient>; // 这里的Arc是共享的，并且永远不会被修改，只会被删除，所以可以设计无锁结构
 
@@ -27,15 +27,6 @@ impl WebDavClient {
     pub fn new() -> Self {
         let child_clients = ReactiveChildClients::new();
         let global_config = GlobalConfig::default();
-
-        spawn({
-            let mut global_watcher = global_config.watch();
-            async move {
-                while let Ok(config) = global_watcher.changed().await {
-                    println!("全局配置改变{:?}", config)
-                }
-            }
-        });
 
         Self { child_clients, global_config }
     }
