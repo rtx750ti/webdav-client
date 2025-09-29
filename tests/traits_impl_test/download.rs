@@ -3,6 +3,7 @@ use crate::{WEBDAV_ENV_PATH_2, load_account};
 use memory_stats::memory_stats;
 #[cfg(feature = "reactive")]
 use std::time::Duration;
+use rand::{thread_rng, RngCore};
 #[cfg(feature = "reactive")]
 use tokio::time::Instant;
 use webdav_client::client::WebDavClient;
@@ -197,6 +198,19 @@ async fn test_download_pause() -> Result<(), String> {
     Ok(())
 }
 
+pub fn random_bytes_2mb() -> Vec<u8> {
+    const SIZE: usize = 25;
+    let mut buf = vec![0u8; SIZE];
+    thread_rng().fill_bytes(&mut buf);
+    buf
+}
+
+#[test]
+fn generates_2mb() {
+    let s = random_bytes_2mb();
+    assert_eq!(s.len(), 255);
+}
+
 #[cfg(feature = "reactive")]
 #[tokio::test]
 async fn test_reactive_data() -> Result<(), String> {
@@ -240,7 +254,7 @@ async fn test_reactive_data() -> Result<(), String> {
             tokio::spawn(async move {
                 match watch_clone.changed().await {
                     Ok(new_value) => {
-                        println!("监听器 {} 收到新名称: {}", i, new_value);
+                        // println!("监听器 {} 收到新名称: {}", i, new_value);
                         let _ = tx_clone.send(i).await;
                     }
                     Err(e) => {
@@ -258,12 +272,16 @@ async fn test_reactive_data() -> Result<(), String> {
 
         // 更新名称以触发监听器
         for i in 0..1_000_000 {
-            let new_name = format!("{}_updated{}", initial_name, i);
+            let new_name = format!("{:?}", random_bytes_2mb());
             name.update(new_name.clone())
                 .map_err(|e| format!("更新失败: {}", e))?;
             // 验证名称是否更新
-            let current_name = name.get_current().unwrap();
-            assert_eq!(current_name, new_name, "名称更新失败");
+            let current_name = name.get_current_borrow();
+            assert_eq!(
+                current_name.as_ref().unwrap(),
+                &new_name,
+                "名称更新失败"
+            );
         }
 
         let duration = start.elapsed();
@@ -275,7 +293,7 @@ async fn test_reactive_data() -> Result<(), String> {
             .ok_or("通道关闭".to_string())?;
 
         println!(
-            "1_000_000 次 30 个监听对象名称更新总耗时: {:.2?}",
+            "1_000_000 次 30 个监听对象名称，每个名称长度255字符，更新总耗时: {:.2?}",
             duration
         );
         println!("物理内存使用: {} bytes", stats.physical_mem);

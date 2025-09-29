@@ -47,7 +47,7 @@ fn watch_self_reactive_property(
     tokio::spawn(async move {
         loop {
             if let Some(file_lock) = file_lock.get_current() {
-                if !file_lock {
+                if !*file_lock {
                     break;
                 }
             } else {
