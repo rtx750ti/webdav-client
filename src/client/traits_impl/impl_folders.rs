@@ -9,7 +9,7 @@ use crate::global_config::GlobalConfig;
 use crate::public::enums::depth::Depth;
 use crate::public::traits::url_format::UrlFormat;
 use crate::public::utils::get_folders_public_impl::{
-    GetFoldersError, get_folders_with_client,
+    get_folders_with_client, GetFoldersError,
 };
 use crate::resources_file::traits::to_resource_file_data::ToResourceFileData;
 use async_trait::async_trait;

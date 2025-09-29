@@ -1,6 +1,6 @@
-use std::io;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use reqwest::Url;
+use std::io;
 
 /// 资源文件的转换非常复杂，所以必须抽离成独立的错误
 #[derive(Debug, thiserror::Error)]

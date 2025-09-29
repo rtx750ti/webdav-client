@@ -3,18 +3,18 @@ mod file;
 mod http_stream;
 mod task;
 
-use std::path::PathBuf;
-use crate::public::utils::handle_file::computed_semaphore_count;
-use std::sync::Arc;
-use reqwest::Client;
-use tokio::io::AsyncWriteExt;
-use tokio::sync::Semaphore;
 use crate::global_config::GlobalConfig;
+use crate::public::utils::handle_file::computed_semaphore_count;
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::traits_impl::impl_download::chunked_download::file::{get_local_file_size, open_file};
 use crate::resources_file::traits_impl::impl_download::chunked_download::task::{build_download_tasks, join_all_and_handle_result, DownloadTaskArgs};
+use reqwest::Client;
+use std::path::PathBuf;
+use std::sync::Arc;
+use tokio::io::AsyncWriteExt;
+use tokio::sync::Semaphore;
 
 const CHUNK_SIZE: u64 = 4 * 1024 * 1024;
 

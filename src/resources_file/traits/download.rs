@@ -1,6 +1,6 @@
+use crate::global_config::GlobalConfig;
 use async_trait::async_trait;
 use std::sync::Arc;
-use crate::global_config::GlobalConfig;
 
 pub type TDownloadConfig = GlobalConfig;
 

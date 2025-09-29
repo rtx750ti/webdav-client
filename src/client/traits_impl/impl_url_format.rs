@@ -1,5 +1,5 @@
-use crate::client::WebDavClient;
 use crate::client::structs::client_key::ClientKey;
+use crate::client::WebDavClient;
 use crate::public::traits::url_format::{
     FormatUrlPathError, UrlFormat, UrlFormatError,
 };

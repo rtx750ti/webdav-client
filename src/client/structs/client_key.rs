@@ -1,6 +1,6 @@
-use std::sync::Arc;
 use crate::public::utils::format_base_url;
 use reqwest::Url;
+use std::sync::Arc;
 
 pub type TClientKey = Arc<ClientKey>;
 

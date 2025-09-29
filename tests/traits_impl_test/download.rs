@@ -1,14 +1,14 @@
-use crate::{WEBDAV_ENV_PATH_2, load_account};
+use crate::{load_account, WEBDAV_ENV_PATH_2};
 #[cfg(feature = "reactive")]
 use memory_stats::memory_stats;
-#[cfg(feature = "reactive")]
-use std::time::Duration;
 use rand::{thread_rng, RngCore};
 #[cfg(feature = "reactive")]
+use std::time::Duration;
+#[cfg(feature = "reactive")]
 use tokio::time::Instant;
-use webdav_client::client::WebDavClient;
 use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::folder::Folders;
+use webdav_client::client::WebDavClient;
 use webdav_client::public::enums::depth::Depth;
 use webdav_client::resources_file::traits::download::Download;
 

@@ -1,16 +1,16 @@
-use std::cmp::min;
-use std::sync::Arc;
-use futures_util::future::join_all;
-use reqwest::Client;
-use tokio::fs::File;
-use tokio::sync::Semaphore;
-use tokio::task::JoinHandle;
 use crate::global_config::GlobalConfig;
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
-use crate::resources_file::traits_impl::impl_download::chunked_download::CHUNK_SIZE;
 use crate::resources_file::traits_impl::impl_download::chunked_download::file::clone_file_handle;
 use crate::resources_file::traits_impl::impl_download::chunked_download::http_stream::{download_range_file, DownloadRangeFileArgs};
+use crate::resources_file::traits_impl::impl_download::chunked_download::CHUNK_SIZE;
+use futures_util::future::join_all;
+use reqwest::Client;
+use std::cmp::min;
+use std::sync::Arc;
+use tokio::fs::File;
+use tokio::sync::Semaphore;
+use tokio::task::JoinHandle;
 
 pub fn computed_range_header(total_size: u64, start: u64) -> String {
     let end = min(start + CHUNK_SIZE - 1, total_size - 1);

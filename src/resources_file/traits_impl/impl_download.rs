@@ -2,14 +2,13 @@ mod chunked_download;
 mod handle_download;
 mod not_chunked_download;
 
-use crate::reactive::ReactiveProperty;
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::structs::resources_file::ResourcesFile;
 use crate::resources_file::traits::download::Download;
 use crate::resources_file::traits_impl::impl_download::handle_download::{
-    HandleDownloadArgs, handle_download,
+    handle_download, HandleDownloadArgs,
 };
 use async_trait::async_trait;
 use std::path::PathBuf;
@@ -105,7 +104,7 @@ impl Download for ResourcesFile {
         save_absolute_path: &str,
     ) -> Result<Arc<Self>, String> {
         let handle_mounted =
-           async || -> Result<(JoinHandle<()>, JoinHandle<()>), String> {
+            async || -> Result<(JoinHandle<()>, JoinHandle<()>), String> {
                 // 以下顺序不能乱
                 // 1、监听文件锁
                 let watching_file_lock =
@@ -129,8 +128,8 @@ impl Download for ResourcesFile {
         let save_absolute_path =
             preprocessing_save_path(self.get_data(), save_absolute_path)
                 .map_err(|e| {
-                format!("[preprocessing_save_path] {}", e.to_string())
-            })?;
+                    format!("[preprocessing_save_path] {}", e.to_string())
+                })?;
 
         let http_client = self.get_http_client();
 

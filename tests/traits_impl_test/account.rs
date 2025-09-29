@@ -1,9 +1,9 @@
-use crate::{WEBDAV_ENV_PATH_1, load_account};
+use crate::{load_account, WEBDAV_ENV_PATH_1};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
-use webdav_client::client::WebDavClient;
 use webdav_client::client::traits::account::{Account, AccountError};
+use webdav_client::client::WebDavClient;
 
 #[tokio::test]
 async fn test_add_account() -> Result<(), AccountError> {
