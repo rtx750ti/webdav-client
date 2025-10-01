@@ -4,26 +4,38 @@ use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use crate::resources_file::traits::download::TDownloadConfig;
 use crate::resources_file::impl_traits::impl_download::chunked_download::black_list::is_chunked_download_blacklisted;
-use crate::resources_file::impl_traits::impl_download::chunked_download::{chunked_download, ChunkedDownloadArgs};
+use crate::resources_file::impl_traits::impl_download::chunked_download::{chunked_download, ChunkedDownloadArgs, ChunkedDownloadError};
 use crate::resources_file::impl_traits::impl_download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs};
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum GetLargeFileThresholdError {
+    #[error("全局配置未初始化")]
+    GlobalConfigUninitialized,
+}
 
 /// 统一获取大文件阈值
 fn get_large_file_threshold(
     config: &TDownloadConfig,
-) -> Result<u64, String> {
-    config
-        .get_current()
-        .map(|c| c.large_file_threshold)
-        .ok_or_else(|| "全局配置未初始化".to_string())
+) -> Result<u64, GetLargeFileThresholdError> {
+    config.get_current().map(|c| c.large_file_threshold).ok_or_else(|| {
+        GetLargeFileThresholdError::GlobalConfigUninitialized
+    })
+}
+
+#[derive(Debug, Error)]
+pub enum DownloadWithoutChunkingError {
+    #[error("not_chunked_download 出错: {0}")]
+    NotChunkedDownloadError(String),
 }
 
 /// 统一处理非分片下载
 async fn download_without_chunking(
     args: HandleDownloadArgs,
-) -> Result<(), String> {
+) -> Result<(), DownloadWithoutChunkingError> {
     let not_chunked_download_args = NotChunkedDownloadArgs {
         http_client: args.http_client,
         resource_file_data: args.resource_file_data,
@@ -33,9 +45,21 @@ async fn download_without_chunking(
         inner_config: args.inner_config,
     };
 
-    not_chunked_download(not_chunked_download_args)
-        .await
-        .map_err(|e| format!("[not_chunked_download] {}", e))
+    not_chunked_download(not_chunked_download_args).await.map_err(|e| {
+        DownloadWithoutChunkingError::NotChunkedDownloadError(e)
+    })
+}
+
+#[derive(Debug, Error)]
+pub enum HandleDownloadError {
+    #[error(transparent)]
+    GetLargeFileThresholdError(#[from] GetLargeFileThresholdError),
+
+    #[error(transparent)]
+    DownloadWithoutChunkingError(#[from] DownloadWithoutChunkingError),
+
+    #[error("chunked_download 出错: {0}")]
+    ChunkedDownloadError(#[from] ChunkedDownloadError),
 }
 
 pub struct HandleDownloadArgs {
@@ -49,7 +73,7 @@ pub struct HandleDownloadArgs {
 
 pub async fn handle_download(
     args: HandleDownloadArgs,
-) -> Result<(), String> {
+) -> Result<(), HandleDownloadError> {
     // 这里不再处理任何文件夹的递归逻辑，交由库的使用者来处理递归情况
     if args.resource_file_data.is_dir {
         return Ok(());
@@ -59,14 +83,14 @@ pub async fn handle_download(
     if is_chunked_download_blacklisted(
         &args.resource_file_data.base_url.to_string(),
     ) {
-        return download_without_chunking(args).await;
+        return Ok(download_without_chunking(args).await?);
     }
 
     // 文件大小阈值检查
     if let Some(size) = args.resource_file_data.size {
         let threshold = get_large_file_threshold(&args.global_config)?;
         if size < threshold {
-            return download_without_chunking(args).await;
+            return Ok(download_without_chunking(args).await?);
         }
     }
 
@@ -80,7 +104,7 @@ pub async fn handle_download(
         inner_config: args.inner_config,
     };
 
-    chunked_download(chunked_download_args)
-        .await
-        .map_err(|e| format!("[chunked_download] {}", e))
+    chunked_download(chunked_download_args).await?;
+
+    Ok(())
 }

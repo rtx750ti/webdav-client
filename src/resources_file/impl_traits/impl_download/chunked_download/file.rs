@@ -1,5 +1,6 @@
 use crate::resources_file::impl_traits::impl_download::chunked_download::LocalFileDownloadState;
 use std::path::PathBuf;
+use thiserror::Error;
 use tokio::fs;
 use tokio::fs::File;
 
@@ -29,16 +30,29 @@ pub fn computed_semaphore_count(size: Option<u64>) -> usize {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum OpenFileError {
+    #[error("打开文件失败: {0}")]
+    IoError(#[from] std::io::Error),
+}
+
 pub async fn open_file(
     save_absolute_path: &PathBuf,
-) -> Result<File, String> {
+) -> Result<File, OpenFileError> {
     // 打开文件（续传时用 append + write）
-    fs::OpenOptions::new()
+    let file = fs::OpenOptions::new()
         .create(true)
         .write(true)
         .open(save_absolute_path)
-        .await
-        .map_err(|e| e.to_string())
+        .await?;
+
+    Ok(file)
+}
+
+#[derive(Debug, Error)]
+pub enum CloneFileHandleError {
+    #[error("文件句柄克隆失败: {0}")]
+    IoError(#[from] std::io::Error),
 }
 
 /// 克隆一个文件句柄，用于并发访问同一个文件。
@@ -80,14 +94,24 @@ pub async fn open_file(
 /// - [`tokio::fs::File::try_clone`]
 /// - [`tokio::io::AsyncSeekExt`] 用于移动文件指针
 /// - [`tokio::io::AsyncWriteExt`] 用于写入数据
-pub async fn clone_file_handle(file: &File) -> Result<File, String> {
-    file.try_clone().await.map_err(|e| format!("文件句柄克隆失败: {}", e))
+pub async fn clone_file_handle(
+    file: &File,
+) -> Result<File, CloneFileHandleError> {
+    let file = file.try_clone().await?;
+
+    Ok(file)
+}
+
+#[derive(Debug, Error)]
+pub enum GetLocalFileSizeError {
+    #[error("文件句柄克隆失败: {0}")]
+    IoError(#[from] std::io::Error),
 }
 
 pub async fn get_local_file_size(
     save_absolute_path: &PathBuf,
     total_size: u64,
-) -> Result<LocalFileDownloadState, String> {
+) -> Result<LocalFileDownloadState, GetLocalFileSizeError> {
     // 检查是否已有部分文件（断点续传）
     let mut local_size: u64 = 0;
 
@@ -98,9 +122,7 @@ pub async fn get_local_file_size(
 
         if local_size > total_size {
             // 本地文件比远程大，说明出错，删掉重新下
-            tokio::fs::remove_file(save_absolute_path)
-                .await
-                .map_err(|e| e.to_string())?;
+            tokio::fs::remove_file(save_absolute_path).await?;
 
             local_size = 0;
         } else if local_size == total_size {

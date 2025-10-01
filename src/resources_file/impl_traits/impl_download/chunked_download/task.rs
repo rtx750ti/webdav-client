@@ -1,13 +1,14 @@
 use crate::global_config::global_config::GlobalConfig;
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
-use crate::resources_file::impl_traits::impl_download::chunked_download::file::clone_file_handle;
+use crate::resources_file::impl_traits::impl_download::chunked_download::file::{clone_file_handle, CloneFileHandleError};
 use crate::resources_file::impl_traits::impl_download::chunked_download::http_stream::{download_range_file, DownloadRangeFileArgs};
 use crate::resources_file::impl_traits::impl_download::chunked_download::CHUNK_SIZE;
 use futures_util::future::join_all;
 use reqwest::Client;
 use std::cmp::min;
 use std::sync::Arc;
+use thiserror::Error;
 use tokio::fs::File;
 use tokio::sync::Semaphore;
 use tokio::task::JoinHandle;
@@ -45,7 +46,9 @@ struct DownloadTaskContext {
 }
 
 impl DownloadTaskContext {
-    fn into_range_file_args<'a>(&'a mut self) -> DownloadRangeFileArgs<'a> {
+    fn into_range_file_args<'a>(
+        &'a mut self,
+    ) -> DownloadRangeFileArgs<'a> {
         DownloadRangeFileArgs {
             http_client: &self.http_client,
             range_header_str: &self.range_header_str,
@@ -59,11 +62,23 @@ impl DownloadTaskContext {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum BuildDownloadTasksError {
+    #[error("clone_file_handle 出错: {0}")]
+    CloneFileHandleError(#[from] CloneFileHandleError),
+
+    #[error("无法获取并发许可: {0}")]
+    AcquirePermitError(String),
+
+    #[error("download_range_file 出错: {0}")]
+    DownloadRangeFileError(String),
+}
 
 /// 构建下载任务
 pub async fn build_download_tasks<'a>(
     mut args: DownloadTaskArgs<'a>,
-) -> Result<(DownloadTasks, DownloadTaskArgs<'a>), String> {
+) -> Result<(DownloadTasks, DownloadTaskArgs<'a>), BuildDownloadTasksError>
+{
     let mut tasks = vec![];
 
     // 将下载任务分配到并发线程
@@ -107,17 +122,30 @@ pub async fn build_download_tasks<'a>(
     Ok((tasks, args))
 }
 
+#[derive(Debug, Error)]
+pub enum JoinAllAndHandleResultError {
+    #[error("任务 Join 出错: {0}")]
+    JoinError(#[from] tokio::task::JoinError),
+
+    #[error("任务执行出错: {0}")]
+    TaskError(String),
+}
+
 pub async fn join_all_and_handle_result(
     tasks: DownloadTasks,
-) -> Result<(), String> {
+) -> Result<(), JoinAllAndHandleResultError> {
     // 等待所有任务完成
     let results = join_all(tasks).await;
 
     // 检查任务的结果
     for result in results {
-        result
-            .map_err(|e| format!("[chunked_download] {}", e.to_string()))?
-            .map_err(|e| e.to_string())?;
+        // JoinError
+        let inner = result?;
+
+        // 任务返回的 Err(String)
+        inner.map_err(|e| {
+            JoinAllAndHandleResultError::TaskError(e.to_string())
+        })?;
     }
 
     Ok(())

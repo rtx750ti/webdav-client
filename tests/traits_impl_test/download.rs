@@ -33,7 +33,8 @@ async fn test_download() -> Result<(), String> {
                 .download(
                     "C:\\project\\rust\\quick-sync\\temp-download-files\\",
                 )
-                .await?;
+                .await
+                .map_err(|e| e.to_string())?;
         }
     }
     Ok(())
@@ -94,7 +95,8 @@ async fn test_download_progress_monitoring() -> Result<(), String> {
                 .download(
                     "C:\\project\\rust\\quick-sync\\temp-download-files\\",
                 )
-                .await?;
+                .await
+                .map_err(|e| e.to_string())?;
         }
     }
 
@@ -188,7 +190,8 @@ async fn test_download_pause() -> Result<(), String> {
                 .download(
                     "C:\\project\\rust\\quick-sync\\temp-download-files\\",
                 )
-                .await?;
+                .await
+                .map_err(|e| e.to_string())?;
         }
     }
 
