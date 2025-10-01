@@ -6,10 +6,6 @@ edition = "2024"
 [lib]
 doctest = false
 
-[features]
-default = ["reactive"]
-reactive = []
-
 [dependencies]
 tokio = { version = "1", features = [
     "rt-multi-thread",

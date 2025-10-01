@@ -1,34 +1,8 @@
-#[cfg(feature = "reactive")]
 use crate::reactive::reactive::ReactiveProperty;
-#[cfg(feature = "reactive")]
 use std::ops::Deref;
 
 pub const DEFAULT_LARGE_FILE_THRESHOLD: u64 = 5 * 1024 * 1024;
 
-#[cfg(not(feature = "reactive"))]
-#[derive(Clone, Debug)]
-pub struct GlobalConfig {
-    pub max_speed: Option<u64>,    // 限速
-    pub timeout_secs: u64,         // 超时
-    pub max_retries: u32,          // 最大重试次数
-    pub large_file_threshold: u64, // 如果文件大于该值，则自动分片下载
-    pub max_thread_count: u32,     // 最大线程数
-}
-
-#[cfg(not(feature = "reactive"))]
-impl Default for GlobalConfig {
-    fn default() -> Self {
-        Self {
-            max_speed: None,
-            timeout_secs: 30,
-            max_retries: 4,
-            large_file_threshold: DEFAULT_LARGE_FILE_THRESHOLD,
-            max_thread_count: 128,
-        }
-    }
-}
-
-#[cfg(feature = "reactive")]
 #[derive(Debug, Clone)]
 pub struct ConfigData {
     pub max_speed: Option<u64>,    // 限速
@@ -39,7 +13,6 @@ pub struct ConfigData {
     pub global_pause: bool,        // 全局暂停标志
 }
 
-#[cfg(feature = "reactive")]
 impl Default for ConfigData {
     fn default() -> Self {
         Self {
@@ -74,13 +47,12 @@ impl Default for ConfigData {
 /// config1.enable_pause_switch().unwrap();
 /// assert!(config2.pause_enabled()); // 两者共享同一状态
 /// ```
-#[cfg(feature = "reactive")]
+
 #[derive(Clone, Debug)]
 pub struct GlobalConfig {
     inner: ReactiveProperty<ConfigData>,
 }
 
-#[cfg(feature = "reactive")]
 impl GlobalConfig {
     /// 创建新的全局配置
     ///
@@ -167,14 +139,12 @@ impl GlobalConfig {
     }
 }
 
-#[cfg(feature = "reactive")]
 impl Default for GlobalConfig {
     fn default() -> Self {
         Self { inner: ReactiveProperty::new(ConfigData::default()) }
     }
 }
 
-#[cfg(feature = "reactive")]
 impl Deref for GlobalConfig {
     type Target = ReactiveProperty<ConfigData>;
 

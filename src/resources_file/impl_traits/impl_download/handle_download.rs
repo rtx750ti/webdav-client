@@ -14,18 +14,10 @@ use std::sync::Arc;
 fn get_large_file_threshold(
     config: &TDownloadConfig,
 ) -> Result<u64, String> {
-    #[cfg(not(feature = "reactive"))]
-    {
-        Ok(config.large_file_threshold)
-    }
-
-    #[cfg(feature = "reactive")]
-    {
-        config
-            .get_current()
-            .map(|c| c.large_file_threshold)
-            .ok_or_else(|| "全局配置未初始化".to_string())
-    }
+    config
+        .get_current()
+        .map(|c| c.large_file_threshold)
+        .ok_or_else(|| "全局配置未初始化".to_string())
 }
 
 /// 统一处理非分片下载

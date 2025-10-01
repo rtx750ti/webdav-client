@@ -1,12 +1,9 @@
 use crate::client::structs::client_key::TClientKey;
 use crate::global_config::global_config::GlobalConfig;
-#[cfg(feature = "reactive")]
 use crate::resources_file::structs::reactive_config::ReactiveConfig;
-#[cfg(feature = "reactive")]
 use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
 use crate::resources_file::structs::resource_file_data::ResourceFileData;
 use reqwest::Client;
-#[cfg(feature = "reactive")]
 use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
@@ -17,20 +14,12 @@ pub struct ResourceFileUniqueKey {
     pub relative_path: String,
 }
 
-#[cfg(not(feature = "reactive"))]
-#[derive(Debug, Clone)]
-pub struct ResourcesFile {
-    data: Arc<ResourceFileData>,
-    http_client: Client,
-}
-
 // 锁的最大重试次数
 const FILE_LOCK_RETRY_TIMES: usize = 3;
 
 // 每次锁定/解锁的尝试间隔时间
 const FILE_LOCK_RETRY_DELAY: Duration = Duration::from_secs(1);
 
-#[cfg(feature = "reactive")]
 #[derive(Debug, Clone)]
 pub struct ResourcesFile {
     /// 资源文件原始数据
@@ -41,7 +30,6 @@ pub struct ResourcesFile {
     global_config: GlobalConfig,
 }
 
-#[cfg(feature = "reactive")]
 impl Deref for ResourcesFile {
     type Target = ReactiveFileProperty;
 
@@ -51,12 +39,6 @@ impl Deref for ResourcesFile {
 }
 
 impl ResourcesFile {
-    #[cfg(not(feature = "reactive"))]
-    pub fn new(data: ResourceFileData, http_client: Client) -> Self {
-        Self { data: Arc::new(data), http_client }
-    }
-
-    #[cfg(feature = "reactive")]
     pub fn new(
         data: ResourceFileData,
         http_client: Client,

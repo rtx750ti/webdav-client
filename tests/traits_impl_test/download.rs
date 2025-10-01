@@ -1,15 +1,12 @@
-use crate::{load_account, WEBDAV_ENV_PATH_2};
-#[cfg(feature = "reactive")]
+use crate::{WEBDAV_ENV_PATH_2, load_account};
 use memory_stats::memory_stats;
-use rand::{thread_rng, RngCore};
-#[cfg(feature = "reactive")]
+use rand::{RngCore, thread_rng};
 use std::time::Duration;
-#[cfg(feature = "reactive")]
 use tokio::time::Instant;
+use webdav_client::client::WebDavClient;
 use webdav_client::client::enums::depth::Depth;
 use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::folder::Folders;
-use webdav_client::client::WebDavClient;
 use webdav_client::resources_file::traits::download::Download;
 
 #[tokio::test]
@@ -211,7 +208,6 @@ fn generates_2mb() {
     assert_eq!(s.len(), 255);
 }
 
-#[cfg(feature = "reactive")]
 #[tokio::test]
 async fn test_reactive_data() -> Result<(), String> {
     if let Some(stats) = memory_stats() {
