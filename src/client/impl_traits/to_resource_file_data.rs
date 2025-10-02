@@ -1,8 +1,8 @@
 use crate::client::structs::raw_file_xml::{
     CurrentUserPrivilegeSet, MultiStatus, Prop, PropStat, Response,
 };
-use crate::resources_file::structs::resource_file_data::ResourceFileData;
-use crate::resources_file::traits::to_resource_file_data::{
+use crate::resource_file::structs::resource_file_data::ResourceFileData;
+use crate::resource_file::traits::to_resource_file_data::{
     ToResourceFileData, ToResourceFileDataError,
 };
 use reqwest::Url;

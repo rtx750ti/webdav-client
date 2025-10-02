@@ -4,11 +4,11 @@ pub(crate) mod http_stream;
 pub(crate) mod task;
 
 use crate::global_config::global_config::GlobalConfig;
-use crate::resources_file::structs::reactive_config::ReactiveConfig;
-use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
-use crate::resources_file::structs::resource_file_data::ResourceFileData;
-use crate::resources_file::impl_traits::impl_download::chunked_download::file::{computed_semaphore_count, get_local_file_size, open_file, GetLocalFileSizeError, OpenFileError};
-use crate::resources_file::impl_traits::impl_download::chunked_download::task::{build_download_tasks, join_all_and_handle_result, BuildDownloadTasksError, DownloadTaskArgs, JoinAllAndHandleResultError};
+use crate::resource_file::structs::resource_config::ResourceConfig;
+use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
+use crate::resource_file::structs::resource_file_data::ResourceFileData;
+use crate::resource_file::impl_traits::impl_download::chunked_download::file::{computed_semaphore_count, get_local_file_size, open_file, GetLocalFileSizeError, OpenFileError};
+use crate::resource_file::impl_traits::impl_download::chunked_download::task::{build_download_tasks, join_all_and_handle_result, BuildDownloadTasksError, DownloadTaskArgs, JoinAllAndHandleResultError};
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -32,7 +32,7 @@ pub enum SetInitialProgressError {
 }
 
 pub fn set_initial_progress(
-    inner_state: &ReactiveFileProperty,
+    inner_state: &ResourceFileProperty,
     start: u64,
 ) -> Result<(), SetInitialProgressError> {
     inner_state
@@ -52,8 +52,8 @@ pub struct ChunkedDownloadArgs {
     pub(crate) http_client: Client,
     pub(crate) save_absolute_path: PathBuf,
     pub(crate) global_config: GlobalConfig,
-    pub(crate) inner_state: ReactiveFileProperty,
-    pub(crate) inner_config: ReactiveConfig,
+    pub(crate) inner_state: ResourceFileProperty,
+    pub(crate) inner_config: ResourceConfig,
 }
 
 #[derive(Debug, Error)]

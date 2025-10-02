@@ -1,8 +1,8 @@
 use crate::client::structs::client_key::TClientKey;
 use crate::global_config::global_config::GlobalConfig;
-use crate::resources_file::structs::reactive_config::ReactiveConfig;
-use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
-use crate::resources_file::structs::resource_file_data::ResourceFileData;
+use crate::resource_file::structs::resource_config::ResourceConfig;
+use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
+use crate::resource_file::structs::resource_file_data::ResourceFileData;
 use reqwest::Client;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -25,13 +25,13 @@ pub struct ResourcesFile {
     /// 资源文件原始数据
     data: Arc<ResourceFileData>,
     http_client: Client,
-    reactive_state: ReactiveFileProperty,
-    reactive_config: ReactiveConfig,
+    reactive_state: ResourceFileProperty,
+    reactive_config: ResourceConfig,
     global_config: GlobalConfig,
 }
 
 impl Deref for ResourcesFile {
-    type Target = ReactiveFileProperty;
+    type Target = ResourceFileProperty;
 
     fn deref(&self) -> &Self::Target {
         &self.reactive_state
@@ -44,8 +44,8 @@ impl ResourcesFile {
         http_client: Client,
         global_config: GlobalConfig,
     ) -> Self {
-        let reactive_state = ReactiveFileProperty::new(data.name.clone());
-        let reactive_config = ReactiveConfig::default();
+        let reactive_state = ResourceFileProperty::new(data.name.clone());
+        let reactive_config = ResourceConfig::default();
         Self {
             data: Arc::new(data),
             http_client,
@@ -55,11 +55,11 @@ impl ResourcesFile {
         }
     }
 
-    pub fn get_reactive_state(&self) -> ReactiveFileProperty {
+    pub fn get_reactive_state(&self) -> ResourceFileProperty {
         self.reactive_state.clone()
     }
 
-    pub fn get_reactive_config(&self) -> ReactiveConfig {
+    pub fn get_reactive_config(&self) -> ResourceConfig {
         self.reactive_config.clone()
     }
 

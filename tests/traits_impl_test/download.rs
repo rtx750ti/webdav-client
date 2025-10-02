@@ -7,7 +7,7 @@ use webdav_client::client::WebDavClient;
 use webdav_client::client::enums::depth::Depth;
 use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::folder::Folders;
-use webdav_client::resources_file::traits::download::Download;
+use webdav_client::resource_file::traits::download::Download;
 
 #[tokio::test]
 async fn test_download() -> Result<(), String> {

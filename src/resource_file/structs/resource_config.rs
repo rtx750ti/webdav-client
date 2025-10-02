@@ -2,7 +2,7 @@ use std::ops::Deref;
 use crate::reactive::reactive::ReactiveProperty;
 
 #[derive(Debug, Clone)]
-pub struct ReactiveConfigData {
+pub struct ResourceConfigData {
     pub max_speed: Option<u64>,    // 限速
     pub timeout_secs: u64,         // 超时
     pub max_retries: u32,          // 最大重试次数
@@ -11,31 +11,31 @@ pub struct ReactiveConfigData {
     pub pause: bool,               // 暂停标志
 }
 
-type TReactiveConfigData = ReactiveProperty<ReactiveConfigData>;
+type TResourceConfigData = ReactiveProperty<ResourceConfigData>;
 
 #[derive(Debug, Clone)]
-pub struct ReactiveConfig {
-    inner: TReactiveConfigData,
+pub struct ResourceConfig {
+    inner: TResourceConfigData,
 }
 
-impl ReactiveConfig {
+impl ResourceConfig {
     pub fn is_paused(&self) -> bool {
         self.get_current().map(|cfg| cfg.pause).unwrap_or(false)
     }
 }
 
-impl Deref for ReactiveConfig {
-    type Target = TReactiveConfigData;
+impl Deref for ResourceConfig {
+    type Target = TResourceConfigData;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl Default for ReactiveConfig {
+impl Default for ResourceConfig {
     fn default() -> Self {
         Self {
-            inner: ReactiveProperty::new(ReactiveConfigData {
+            inner: ReactiveProperty::new(ResourceConfigData {
                 max_speed: None,
                 timeout_secs: 0,
                 max_retries: 0,

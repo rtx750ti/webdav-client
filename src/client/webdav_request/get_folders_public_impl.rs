@@ -1,6 +1,6 @@
 use crate::client::structs::raw_file_xml::MultiStatus;
 use crate::client::traits::account::AccountError;
-use crate::resources_file::traits::to_resource_file_data::ToResourceFileDataError;
+use crate::resource_file::traits::to_resource_file_data::ToResourceFileDataError;
 use quick_xml::de::from_str;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use reqwest::Client;

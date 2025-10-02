@@ -1,4 +1,4 @@
-use crate::resources_file::structs::resource_file_data::ResourceFileData;
+use crate::resource_file::structs::resource_file_data::ResourceFileData;
 use reqwest::Url;
 use std::io;
 

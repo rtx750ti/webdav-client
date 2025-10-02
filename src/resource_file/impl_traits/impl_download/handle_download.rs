@@ -1,11 +1,11 @@
 use crate::global_config::global_config::GlobalConfig;
-use crate::resources_file::structs::reactive_config::ReactiveConfig;
-use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
-use crate::resources_file::structs::resource_file_data::ResourceFileData;
-use crate::resources_file::traits::download::TDownloadConfig;
-use crate::resources_file::impl_traits::impl_download::chunked_download::black_list::is_chunked_download_blacklisted;
-use crate::resources_file::impl_traits::impl_download::chunked_download::{chunked_download, ChunkedDownloadArgs, ChunkedDownloadError};
-use crate::resources_file::impl_traits::impl_download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs};
+use crate::resource_file::structs::resource_config::ResourceConfig;
+use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
+use crate::resource_file::structs::resource_file_data::ResourceFileData;
+use crate::resource_file::traits::download::TDownloadConfig;
+use crate::resource_file::impl_traits::impl_download::chunked_download::black_list::is_chunked_download_blacklisted;
+use crate::resource_file::impl_traits::impl_download::chunked_download::{chunked_download, ChunkedDownloadArgs, ChunkedDownloadError};
+use crate::resource_file::impl_traits::impl_download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs};
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -67,8 +67,8 @@ pub struct HandleDownloadArgs {
     pub(crate) save_absolute_path: PathBuf,
     pub(crate) http_client: Client,
     pub(crate) global_config: GlobalConfig,
-    pub(crate) inner_state: ReactiveFileProperty,
-    pub(crate) inner_config: ReactiveConfig,
+    pub(crate) inner_state: ResourceFileProperty,
+    pub(crate) inner_config: ResourceConfig,
 }
 
 pub async fn handle_download(

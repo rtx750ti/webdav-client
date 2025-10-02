@@ -2,12 +2,12 @@ pub(crate) mod chunked_download;
 pub(crate) mod handle_download;
 pub(crate) mod not_chunked_download;
 
-use crate::resources_file::impl_traits::impl_download::handle_download::{
+use crate::resource_file::impl_traits::impl_download::handle_download::{
     HandleDownloadArgs, handle_download,
 };
-use crate::resources_file::structs::resource_file_data::ResourceFileData;
-use crate::resources_file::structs::resources_file::ResourcesFile;
-use crate::resources_file::traits::download::{Download, DownloadError};
+use crate::resource_file::structs::resource_file_data::ResourceFileData;
+use crate::resource_file::structs::resources_file::ResourcesFile;
+use crate::resource_file::traits::download::{Download, DownloadError};
 use async_trait::async_trait;
 use std::convert::Infallible;
 use std::path::PathBuf;

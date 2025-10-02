@@ -1,7 +1,7 @@
 use crate::global_config::global_config::GlobalConfig;
-use crate::resources_file::structs::reactive_config::ReactiveConfig;
-use crate::resources_file::structs::reactive_file_property::ReactiveFileProperty;
-use crate::resources_file::structs::resource_file_data::ResourceFileData;
+use crate::resource_file::structs::resource_config::ResourceConfig;
+use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
+use crate::resource_file::structs::resource_file_data::ResourceFileData;
 use futures_util::StreamExt;
 use reqwest::Client;
 use std::path::PathBuf;
@@ -14,8 +14,8 @@ pub struct NotChunkedDownloadArgs {
     pub(crate) resource_file_data: Arc<ResourceFileData>,
     pub(crate) save_absolute_path: PathBuf,
     pub(crate) global_config: GlobalConfig,
-    pub(crate) inner_state: ReactiveFileProperty,
-    pub(crate) inner_config: ReactiveConfig,
+    pub(crate) inner_state: ResourceFileProperty,
+    pub(crate) inner_config: ResourceConfig,
 }
 
 pub async fn not_chunked_download(

@@ -9,7 +9,7 @@ use crate::global_config::global_config::GlobalConfig;
 use crate::client::webdav_request::get_folders_public_impl::{
     get_folders_with_client, GetFoldersError,
 };
-use crate::resources_file::traits::to_resource_file_data::ToResourceFileData;
+use crate::resource_file::traits::to_resource_file_data::ToResourceFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;
 use reqwest::Url;

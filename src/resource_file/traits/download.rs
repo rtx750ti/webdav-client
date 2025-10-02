@@ -1,6 +1,6 @@
 use crate::global_config::global_config::GlobalConfig;
-use crate::resources_file::impl_traits::impl_download::handle_download::HandleDownloadError;
-use crate::resources_file::impl_traits::impl_download::{
+use crate::resource_file::impl_traits::impl_download::handle_download::HandleDownloadError;
+use crate::resource_file::impl_traits::impl_download::{
     HandleMountedError, HandleUnmountedError, PreprocessingSavePathError,
 };
 use async_trait::async_trait;
