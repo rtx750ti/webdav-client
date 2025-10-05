@@ -6,7 +6,9 @@ use crate::resource_file::impl_traits::impl_download::handle_download::{
     HandleDownloadArgs, handle_download,
 };
 use crate::resource_file::structs::resource_file_data::ResourceFileData;
-use crate::resource_file::structs::resources_file::ResourcesFile;
+use crate::resource_file::structs::resources_file::{
+    LockFileError, ResourcesFile, UnlockFileError,
+};
 use crate::resource_file::traits::download::{Download, DownloadError};
 use async_trait::async_trait;
 use std::convert::Infallible;
@@ -38,14 +40,14 @@ fn preprocessing_save_path(
 
 #[derive(Debug, Error)]
 pub enum HandleMountedError {
-    #[error("lock_file 失败: {0}")]
-    LockFileError(String),
+    #[error(transparent)]
+    LockFileError(LockFileError),
 }
 
 #[derive(Debug, Error)]
 pub enum HandleUnmountedError {
     #[error("unlock_file 失败: {0}")]
-    UnlockFileError(String),
+    UnlockFileError(UnlockFileError),
 }
 
 #[async_trait]
@@ -54,11 +56,9 @@ impl Download for ResourcesFile {
         self,
         save_absolute_path: &str,
     ) -> Result<Arc<Self>, DownloadError> {
-        let handle_mounted = async || -> Result<(), HandleMountedError> {
+        let handle_mounted = async || -> Result<(), LockFileError> {
             // 获取资源文件锁
-            self.lock_file(false)
-                .await
-                .map_err(|e| HandleMountedError::LockFileError(e))?; // 这里可能获取失败，如果获取失败就不下载，交给使用者来处理是否继续
+            self.lock_file(false).await?; // 这里可能获取失败，如果获取失败就不下载，交给使用者来处理是否继续
 
             Ok(())
         };
@@ -81,16 +81,13 @@ impl Download for ResourcesFile {
 
         let download_result = handle_download(handle_download_args).await;
 
-        let handle_unmounted =
-            async || -> Result<(), HandleUnmountedError> {
-                // 以下顺序不能乱
-                // 解锁资源文件
-                self.unlock_file(false).await.map_err(|e| {
-                    HandleUnmountedError::UnlockFileError(e)
-                })?;
+        let handle_unmounted = async || -> Result<(), UnlockFileError> {
+            // 以下顺序不能乱
+            // 解锁资源文件
+            self.unlock_file(false).await?;
 
-                Ok(())
-            };
+            Ok(())
+        };
 
         handle_unmounted().await?;
 

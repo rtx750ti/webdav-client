@@ -127,7 +127,7 @@ async fn test_download_pause() -> Result<(), String> {
 
     let global_config = client.get_global_config();
 
-    global_config.enable_pause_switch()?;
+    global_config.enable_pause_switch().map_err(|e| e.to_string())?;
     println!("配置：{:?}", global_config.get_current());
 
     tokio::spawn(async move {

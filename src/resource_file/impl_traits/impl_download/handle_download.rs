@@ -5,7 +5,7 @@ use crate::resource_file::structs::resource_file_data::ResourceFileData;
 use crate::resource_file::traits::download::TDownloadConfig;
 use crate::resource_file::impl_traits::impl_download::chunked_download::black_list::is_chunked_download_blacklisted;
 use crate::resource_file::impl_traits::impl_download::chunked_download::{chunked_download, ChunkedDownloadArgs, ChunkedDownloadError};
-use crate::resource_file::impl_traits::impl_download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs};
+use crate::resource_file::impl_traits::impl_download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs, NotChunkedDownloadError};
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -29,7 +29,7 @@ fn get_large_file_threshold(
 #[derive(Debug, Error)]
 pub enum DownloadWithoutChunkingError {
     #[error("not_chunked_download 出错: {0}")]
-    NotChunkedDownloadError(String),
+    NotChunkedDownloadError(#[from] NotChunkedDownloadError),
 }
 
 /// 统一处理非分片下载
@@ -45,9 +45,9 @@ async fn download_without_chunking(
         inner_config: args.inner_config,
     };
 
-    not_chunked_download(not_chunked_download_args).await.map_err(|e| {
-        DownloadWithoutChunkingError::NotChunkedDownloadError(e)
-    })
+    not_chunked_download(not_chunked_download_args).await?;
+
+    Ok(())
 }
 
 #[derive(Debug, Error)]

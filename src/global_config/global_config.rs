@@ -1,7 +1,29 @@
-use crate::reactive::reactive::ReactiveProperty;
+use crate::reactive::reactive::{ReactiveProperty, ReactivePropertyError};
 use std::ops::Deref;
+use thiserror::Error;
 
 pub const DEFAULT_LARGE_FILE_THRESHOLD: u64 = 5 * 1024 * 1024;
+
+pub type GlobalFunctionSymbol = String;
+
+#[derive(Debug, Error)]
+pub enum GlobalConfigError {
+    /// ReactiveProperty 内部更新失败
+    #[error("配置更新失败: {fun_symbol}")]
+    UpdateFailed {
+        fun_symbol: GlobalFunctionSymbol,
+        #[source]
+        source: ReactivePropertyError,
+    },
+
+    /// 未启用全局暂停功能时尝试暂停
+    #[error("未启用全局暂停功能，无法暂停")]
+    PauseNotEnabled,
+
+    /// 未启用全局暂停功能时尝试恢复
+    #[error("未启用全局暂停功能，无法恢复")]
+    ResumeNotEnabled,
+}
 
 #[derive(Debug, Clone)]
 pub struct ConfigData {
@@ -74,37 +96,61 @@ impl GlobalConfig {
     }
 
     /// 启用全局暂停功能（开关）
-    pub fn enable_pause_switch(&self) -> Result<&Self, String> {
-        self.update_field(|cfg| cfg.enable_global_pause = true)?;
+    pub fn enable_pause_switch(&self) -> Result<&Self, GlobalConfigError> {
+        self.update_field(|cfg| cfg.enable_global_pause = true).map_err(
+            |e| GlobalConfigError::UpdateFailed {
+                fun_symbol: "enable_global_pause".into(),
+                source: e,
+            },
+        )?;
+
         Ok(self)
     }
 
     /// 禁用全局暂停功能（关闭开关）
-    pub fn disable_pause_switch(&self) -> Result<&Self, String> {
+    pub fn disable_pause_switch(
+        &self,
+    ) -> Result<&Self, GlobalConfigError> {
         self.update_field(|cfg| {
             cfg.enable_global_pause = false;
             cfg.global_pause = false; // 同时取消暂停状态
+        })
+        .map_err(|e| GlobalConfigError::UpdateFailed {
+            fun_symbol: "disable_pause_switch".into(),
+            source: e,
         })?;
+
         Ok(self)
     }
 
     /// 尝试设置为暂停状态（仅当启用开关时才生效）
-    pub fn try_pause(&self) -> Result<&Self, String> {
+    pub fn try_pause(&self) -> Result<&Self, GlobalConfigError> {
         if self.pause_enabled() {
-            self.update_field(|cfg| cfg.global_pause = true)?;
+            self.update_field(|cfg| cfg.global_pause = true).map_err(
+                |e| GlobalConfigError::UpdateFailed {
+                    fun_symbol: "try_pause".into(),
+                    source: e,
+                },
+            )?;
             Ok(self)
         } else {
-            Err("未启用全局暂停功能，无法暂停".to_string())
+            Err(GlobalConfigError::PauseNotEnabled)
         }
     }
 
     /// 尝试恢复（仅当启用开关时才生效）
-    pub fn try_resume(&self) -> Result<&Self, String> {
+    pub fn try_resume(&self) -> Result<&Self, GlobalConfigError> {
         if self.pause_enabled() {
-            self.update_field(|cfg| cfg.global_pause = false)?;
+            self.update_field(|cfg| cfg.global_pause = false).map_err(
+                |e| GlobalConfigError::UpdateFailed {
+                    fun_symbol: "try_resume".into(),
+                    source: e,
+                },
+            )?;
+
             Ok(self)
         } else {
-            Err("未启用全局暂停功能，无法恢复".to_string())
+            Err(GlobalConfigError::ResumeNotEnabled)
         }
     }
 
@@ -112,20 +158,43 @@ impl GlobalConfig {
     pub fn set_max_speed(
         &self,
         speed: Option<u64>,
-    ) -> Result<&Self, String> {
-        self.update_field(|cfg| cfg.max_speed = speed)?;
+    ) -> Result<&Self, GlobalConfigError> {
+        self.update_field(|cfg| cfg.max_speed = speed).map_err(|e| {
+            GlobalConfigError::UpdateFailed {
+                fun_symbol: "set_max_speed".into(),
+                source: e,
+            }
+        })?;
+
         Ok(self)
     }
 
     /// 设置超时时间
-    pub fn set_timeout(&self, seconds: u64) -> Result<&Self, String> {
-        self.update_field(|cfg| cfg.timeout_secs = seconds)?;
+    pub fn set_timeout(
+        &self,
+        seconds: u64,
+    ) -> Result<&Self, GlobalConfigError> {
+        self.update_field(|cfg| cfg.timeout_secs = seconds).map_err(
+            |e| GlobalConfigError::UpdateFailed {
+                fun_symbol: "set_timeout".into(),
+                source: e,
+            },
+        )?;
         Ok(self)
     }
 
     /// 设置最大重试次数
-    pub fn set_max_retries(&self, retries: u32) -> Result<&Self, String> {
-        self.update_field(|cfg| cfg.max_retries = retries)?;
+    pub fn set_max_retries(
+        &self,
+        retries: u32,
+    ) -> Result<&Self, GlobalConfigError> {
+        self.update_field(|cfg| cfg.max_retries = retries).map_err(
+            |e| GlobalConfigError::UpdateFailed {
+                fun_symbol: "set_max_retries".into(),
+                source: e,
+            },
+        )?;
+
         Ok(self)
     }
 
@@ -133,8 +202,13 @@ impl GlobalConfig {
     pub fn set_large_file_threshold(
         &self,
         threshold: u64,
-    ) -> Result<&Self, String> {
-        self.update_field(|cfg| cfg.large_file_threshold = threshold)?;
+    ) -> Result<&Self, GlobalConfigError> {
+        self.update_field(|cfg| cfg.large_file_threshold = threshold)
+            .map_err(|e| GlobalConfigError::UpdateFailed {
+                fun_symbol: "set_large_file_threshold".into(),
+                source: e,
+            })?;
+
         Ok(self)
     }
 }

@@ -2,7 +2,7 @@ use crate::global_config::global_config::GlobalConfig;
 use crate::resource_file::structs::resource_config::ResourceConfig;
 use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
 use crate::resource_file::impl_traits::impl_download::chunked_download::file::{clone_file_handle, CloneFileHandleError};
-use crate::resource_file::impl_traits::impl_download::chunked_download::http_stream::{download_range_file, DownloadRangeFileArgs};
+use crate::resource_file::impl_traits::impl_download::chunked_download::http_stream::{download_range_file, DownloadRangeFileArgs, DownloadRangeFileError};
 use crate::resource_file::impl_traits::impl_download::chunked_download::CHUNK_SIZE;
 use futures_util::future::join_all;
 use reqwest::Client;
@@ -10,7 +10,7 @@ use std::cmp::min;
 use std::sync::Arc;
 use thiserror::Error;
 use tokio::fs::File;
-use tokio::sync::Semaphore;
+use tokio::sync::{AcquireError, Semaphore};
 use tokio::task::JoinHandle;
 
 pub fn computed_range_header(total_size: u64, start: u64) -> String {
@@ -32,7 +32,7 @@ pub struct DownloadTaskArgs<'a> {
     pub inner_config: ResourceConfig,
 }
 
-pub type DownloadTasks = Vec<JoinHandle<Result<(), String>>>;
+pub type DownloadTasks = Vec<JoinHandle<Result<(), BuildDownloadTasksError>>>;
 
 struct DownloadTaskContext {
     pub http_client: Client,
@@ -68,10 +68,10 @@ pub enum BuildDownloadTasksError {
     CloneFileHandleError(#[from] CloneFileHandleError),
 
     #[error("无法获取并发许可: {0}")]
-    AcquirePermitError(String),
+    AcquirePermitError(#[from] AcquireError),
 
     #[error("download_range_file 出错: {0}")]
-    DownloadRangeFileError(String),
+    DownloadRangeFileError(#[from] DownloadRangeFileError),
 }
 
 /// 构建下载任务
@@ -103,10 +103,8 @@ pub async fn build_download_tasks<'a>(
 
         let task = tokio::task::spawn(async move {
             // 使用Semaphore来限制并发数量
-            let _permit = semaphore
-                .acquire_owned()
-                .await
-                .map_err(|e| format!("无法获取并发许可: {}", e))?;
+            let _permit =
+                semaphore.acquire_owned().await?;
 
             let download_range_file_args = context.into_range_file_args();
 

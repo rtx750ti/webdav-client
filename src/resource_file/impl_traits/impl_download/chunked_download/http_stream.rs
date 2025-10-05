@@ -1,4 +1,5 @@
 use crate::global_config::global_config::GlobalConfig;
+use crate::reactive::reactive::ReactivePropertyError;
 use crate::resource_file::structs::resource_config::ResourceConfig;
 use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
 use bytes::Bytes;
@@ -6,8 +7,16 @@ use futures_util::StreamExt;
 use reqwest::header::RANGE;
 use reqwest::{Client, Response};
 use std::io::SeekFrom;
+use thiserror::Error;
 use tokio::fs::File;
+use tokio::io;
 use tokio::io::{AsyncSeekExt, AsyncWriteExt};
+
+#[derive(Debug, Error)]
+pub enum FetchRangeError {
+    #[error("HTTP 请求失败: {0}")]
+    Http(#[from] reqwest::Error),
+}
 
 pub struct FetchRangeArgs<'a> {
     pub(crate) http_client: &'a Client,
@@ -17,13 +26,27 @@ pub struct FetchRangeArgs<'a> {
 
 pub async fn fetch_range_method<'a>(
     args: FetchRangeArgs<'a>,
-) -> Result<Response, String> {
-    args.http_client
+) -> Result<Response, FetchRangeError> {
+    let result = args
+        .http_client
         .get(args.file_url)
         .header(RANGE, args.range_header_str)
         .send()
-        .await
-        .map_err(|e| e.to_string())
+        .await?;
+
+    Ok(result)
+}
+
+#[derive(Debug, Error)]
+pub enum HandleBytesStreamError {
+    #[error("文件Seek写入失败: {0}")]
+    Seek(io::Error),
+
+    #[error("文件写入失败: {0}")]
+    Write(io::Error),
+
+    #[error("更新下载字节数失败: {0}")]
+    UpdateBytes(#[from] ReactivePropertyError),
 }
 
 pub struct HandleBytesStreamArgs<'a> {
@@ -35,23 +58,16 @@ pub struct HandleBytesStreamArgs<'a> {
 
 async fn handle_bytes_stream<'a>(
     args: HandleBytesStreamArgs<'a>,
-) -> Result<(), String> {
+) -> Result<(), HandleBytesStreamError> {
     args.file
         .seek(SeekFrom::Start(args.current_file_seek_start))
         .await
-        .map_err(|e| {
-            format!(
-                "[download_stream.next()]→[seek(SeekFrom::Start(current_file_seek_start))]{}",
-                e
-            )
-        })?;
+        .map_err(|e| HandleBytesStreamError::Seek(e))?;
 
-    args.file.write_all(&args.chunk).await.map_err(|e| {
-        format!(
-            "[download_stream.next()]→[args.file.write_all(&chunk))]{}",
-            e
-        )
-    })?;
+    args.file
+        .write_all(&args.chunk)
+        .await
+        .map_err(|e| HandleBytesStreamError::Write(e))?;
 
     // 读取一次，避免报未使用错误
     let _ = args.current_file_seek_start;
@@ -62,6 +78,18 @@ async fn handle_bytes_stream<'a>(
     })?;
 
     Ok(())
+}
+
+#[derive(Debug, Error)]
+pub enum DownloadRangeFileError {
+    #[error("获取分片失败: {0}")]
+    Fetch(#[from] FetchRangeError),
+
+    #[error("下载流出错: {0}")]
+    Stream(#[from] reqwest::Error),
+
+    #[error("处理分片失败: {0}")]
+    Handle(#[from] HandleBytesStreamError),
 }
 
 pub struct DownloadRangeFileArgs<'a> {
@@ -79,7 +107,7 @@ pub struct DownloadRangeFileArgs<'a> {
 
 pub async fn download_range_file<'a>(
     args: DownloadRangeFileArgs<'a>,
-) -> Result<(), String> {
+) -> Result<(), DownloadRangeFileError> {
     let fetch_range_args = FetchRangeArgs {
         http_client: args.http_client,
         range_header_str: args.range_header_str,
@@ -100,8 +128,7 @@ pub async fn download_range_file<'a>(
     let mut inner_config_watch = inner_config.watch();
 
     while let Some(downloaded_chunk) = download_stream.next().await {
-        let chunk = downloaded_chunk
-            .map_err(|e| format!("[download_stream.next()]{}", e))?;
+        let chunk = downloaded_chunk?;
 
         while global_config.is_paused() || inner_config.is_paused() {
             if global_config.is_paused() {
