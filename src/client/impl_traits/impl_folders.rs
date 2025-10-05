@@ -60,13 +60,13 @@ impl Folders for WebDavClient {
     async fn get_folders(
         &self,
         key: &ClientKey,
-        reactive_paths: &Vec<String>,
+        paths: &Vec<String>,
         depth: &Depth,
     ) -> Result<TResourcesFileCollectionList, GetFoldersError> {
         let http_client_arc = self.get_http_client(key)?;
 
         // 构建所有任务（这里只做并发请求）
-        let tasks = reactive_paths.iter().map(|path| {
+        let tasks = paths.iter().map(|path| {
             let http_client_entity = http_client_arc.get_client();
 
             async move {
