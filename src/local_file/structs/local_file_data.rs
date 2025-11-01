@@ -1,4 +1,3 @@
-use crate::local_file::structs::local_file::LocalFile;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use tokio::fs;
@@ -119,14 +118,5 @@ impl LocalFileData {
                 Err("目录类型不支持获取文件句柄".to_string())
             }
         }
-    }
-
-    /// 转换为LocalFile
-    pub async fn to_local_file(self) -> Result<LocalFile, String> {
-        let path_str = self
-            .get_path()
-            .to_str()
-            .ok_or_else(|| "路径转换失败".to_string())?;
-        LocalFile::new(path_str).await
     }
 }

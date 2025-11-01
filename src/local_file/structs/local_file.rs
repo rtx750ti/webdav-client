@@ -5,11 +5,8 @@ use std::ops::Deref;
 use std::sync::Arc;
 use std::time::Duration;
 
-// 锁的最大重试次数
-const FILE_LOCK_RETRY_TIMES: usize = 3;
-
-// 每次锁定/解锁的尝试间隔时间
-const FILE_LOCK_RETRY_DELAY: Duration = Duration::from_secs(1);
+// 锁的最大等待时间（秒）
+const FILE_LOCK_TIMEOUT_SECS: u64 = 3;
 
 /// 本地文件领域对象
 ///
@@ -147,126 +144,109 @@ impl LocalFile {
 
     /// 锁定文件
     ///
-    /// 传入true即可强制执行，但是需要自己承担风险
+    /// # 参数
+    /// * `force` - 是否强制锁定（即使已被锁定也会成功）
+    ///
+    /// # 返回值
+    /// - `Ok(())` - 锁定成功
+    /// - `Err(String)` - 锁定失败（超时或其他错误）
+    ///
+    /// # 注意
+    /// - 如果 `force=false`，会尝试在超时时间内获取锁
+    /// - 如果 `force=true`，会立即获取锁（即使已被其他线程锁定）
     pub(crate) async fn lock_file(&self, force: bool) -> Result<(), String> {
-        let file_lock = self.get_file_lock();
-        let file_lock_watcher = file_lock.watch();
+        let file_lock_mutex = self.get_file_lock_mutex();
 
-        let file_name = self
-            .data
-            .get_meta()
-            .await
-            .map(|m| m.name)
-            .unwrap_or_else(|_| "unknown".to_string());
+        // 获取文件名用于错误消息（使用缓存的名称）
+        let file_name = self.get_reactive_name()
+            .get_current()
+            .map(|n| n.to_string())
+            .unwrap_or_else(|| "unknown".to_string());
 
         if force {
-            let file_lock_option = file_lock_watcher.borrow();
-            return if let Some(_file_lock_value) = file_lock_option {
-                file_lock
-                    .update_field(|file_lock| *file_lock = true)
-                    .map_err(|e| format!("文件[{}] 锁定失败: {}", file_name, e))?;
+            // 强制模式：直接获取锁并设置为 true
+            let mut lock_guard = file_lock_mutex.lock().await;
+            *lock_guard = true;
+
+            // 更新响应式状态
+            self.update_lock_state(true)?;
+
+            return Ok(());
+        }
+
+        // 非强制模式：尝试在超时时间内获取锁
+        let timeout = Duration::from_secs(FILE_LOCK_TIMEOUT_SECS);
+
+        match tokio::time::timeout(timeout, async {
+            let mut lock_guard = file_lock_mutex.lock().await;
+
+            if *lock_guard {
+                // 已被锁定
+                Err(format!("文件[{}] 已被锁定", file_name))
+            } else {
+                // 未被锁定，立即上锁
+                *lock_guard = true;
+
+                // 更新响应式状态
+                self.update_lock_state(true)?;
 
                 Ok(())
-            } else {
-                Err(format!("文件[{}] 锁为空", file_name))
-            };
-        }
-
-        for i in 0..FILE_LOCK_RETRY_TIMES {
-            let file_lock_value = file_lock_watcher.borrow();
-            match file_lock_value {
-                Some(file_lock_value) => {
-                    if file_lock_value {
-                        // 文件已被锁
-                        if i == FILE_LOCK_RETRY_TIMES - 1 {
-                            return Err(format!(
-                                "文件[{}] 已被锁定，尝试 {} 次失败",
-                                file_name, FILE_LOCK_RETRY_TIMES
-                            ));
-                        }
-
-                        tokio::time::sleep(FILE_LOCK_RETRY_DELAY).await;
-
-                        continue;
-                    } else {
-                        // 文件未锁 → 立刻上锁
-                        file_lock
-                            .update_field(|file_lock| *file_lock = true)
-                            .map_err(|e| {
-                                format!("文件[{}] 锁定失败: {}", file_name, e)
-                            })?;
-                        return Ok(());
-                    }
-                }
-                None => {
-                    return Err(format!("文件[{}] 锁为空", file_name));
-                }
             }
+        }).await {
+            Ok(result) => result,
+            Err(_) => Err(format!(
+                "文件[{}] 锁定超时（{}秒）",
+                file_name, FILE_LOCK_TIMEOUT_SECS
+            )),
         }
-
-        Err(format!("文件[{}] 出现未知错误", file_name))
     }
 
     /// 解锁文件
     ///
-    /// 传入true即可强制执行，但是需要自己承担风险
+    /// # 参数
+    /// * `force` - 是否强制解锁（即使未被锁定也会成功）
+    ///
+    /// # 返回值
+    /// - `Ok(())` - 解锁成功
+    /// - `Err(String)` - 解锁失败（文件未被锁定或其他错误）
+    ///
+    /// # 注意
+    /// - 如果 `force=false`，只有在文件已被锁定时才会解锁
+    /// - 如果 `force=true`，无论当前状态如何都会设置为未锁定
     pub(crate) async fn unlock_file(&self, force: bool) -> Result<(), String> {
-        let file_lock = self.get_file_lock();
-        let file_lock_watcher = file_lock.watch();
+        let file_lock_mutex = self.get_file_lock_mutex();
 
-        let file_name = self
-            .data
-            .get_meta()
-            .await
-            .map(|m| m.name)
-            .unwrap_or_else(|_| "unknown".to_string());
+        // 获取文件名用于错误消息（使用缓存的名称）
+        let file_name = self.get_reactive_name()
+            .get_current()
+            .map(|n| n.to_string())
+            .unwrap_or_else(|| "unknown".to_string());
 
         if force {
-            // 不管状态如何，强制解锁
-            let file_lock_option = file_lock_watcher.borrow();
-            return if let Some(_) = file_lock_option {
-                file_lock
-                    .update_field(|file_lock| *file_lock = false)
-                    .map_err(|e| format!("文件[{}] 解锁失败: {}", file_name, e))?;
+            // 强制模式：直接获取锁并设置为 false
+            let mut lock_guard = file_lock_mutex.lock().await;
+            *lock_guard = false;
 
-                Ok(())
-            } else {
-                Err(format!("文件[{}] 锁为空", file_name))
-            };
+            // 更新响应式状态
+            self.update_lock_state(false)?;
+
+            return Ok(());
         }
 
-        for i in 0..FILE_LOCK_RETRY_TIMES {
-            let file_lock_value = file_lock_watcher.borrow();
-            match file_lock_value {
-                Some(file_lock_value) => {
-                    if !file_lock_value {
-                        if i == FILE_LOCK_RETRY_TIMES - 1 {
-                            return Err(format!(
-                                "文件[{}] 未被锁定，尝试 {} 次失败",
-                                file_name, FILE_LOCK_RETRY_TIMES
-                            ));
-                        }
+        // 非强制模式：检查是否已锁定，只有已锁定才解锁
+        let mut lock_guard = file_lock_mutex.lock().await;
 
-                        tokio::time::sleep(FILE_LOCK_RETRY_DELAY).await;
+        if !*lock_guard {
+            // 未被锁定，返回错误
+            Err(format!("文件[{}] 未被锁定，无法解锁", file_name))
+        } else {
+            // 已被锁定，执行解锁
+            *lock_guard = false;
 
-                        continue;
-                    } else {
-                        // 文件已锁 → 解锁
-                        file_lock
-                            .update_field(|file_lock| *file_lock = false)
-                            .map_err(|e| {
-                                format!("文件[{}] 解锁失败: {}", file_name, e)
-                            })?;
+            // 更新响应式状态
+            self.update_lock_state(false)?;
 
-                        return Ok(());
-                    }
-                }
-                None => {
-                    return Err(format!("文件[{}] 锁为空", file_name));
-                }
-            }
+            Ok(())
         }
-
-        Err(format!("文件[{}] 出现未知错误", file_name))
     }
 }
