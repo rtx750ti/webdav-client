@@ -6,7 +6,7 @@ use crate::client::traits::folder::{
 };
 use crate::client::{THttpClientArc, WebDavClient};
 use crate::global_config::global_config::GlobalConfig;
-use crate::client::webdav_request::get_folders_public_impl::{
+use crate::client::webdav_request::get_folders_with_client::{
     get_folders_with_client, GetFoldersError,
 };
 use crate::resource_file::traits::to_resource_file_data::ToResourceFileData;

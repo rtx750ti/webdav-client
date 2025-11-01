@@ -3,7 +3,7 @@ use crate::{load_account, WEBDAV_ENV_PATH_1};
 use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::folder::{Folders, FoldersError};
 use webdav_client::client::WebDavClient;
-use webdav_client::client::webdav_request::get_folders_public_impl::GetFoldersError;
+use webdav_client::client::webdav_request::get_folders_with_client::GetFoldersError;
 
 #[tokio::test]
 async fn test_get_folders() -> Result<(), FoldersError> {

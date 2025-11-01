@@ -1,4 +1,6 @@
 #[cfg(test)]
+pub mod structs_test;
+#[cfg(test)]
 pub mod traits_impl_test;
 #[cfg(test)]
 use dotenvy::from_filename_override;

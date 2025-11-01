@@ -1,1 +1,1 @@
-pub mod get_folders_public_impl;
+pub mod get_folders_with_client;
