@@ -13,6 +13,13 @@ use std::path::PathBuf;
 use std::time::Duration;
 use tokio::time::sleep;
 
+fn create_file_build_error(
+    cause: String,
+    path: PathBuf,
+) -> FileBuildError {
+    FileBuildError { cause, path }
+}
+
 async fn create_single_file_result(
     http_client: Client,
     absolute_path: &PathBuf,
@@ -25,35 +32,47 @@ async fn create_single_file_result(
         }
         Err(e) => {
             // 构建失败，把 dir_entry 模拟成失败项
-            let failed_list = vec![FileBuildError {
-                cause: e.to_string(),
-                path: absolute_path.to_owned(),
-            }];
+            let failed_list = vec![create_file_build_error(
+                e.to_string(),
+                absolute_path.to_owned(),
+            )];
             Ok((Vec::new(), failed_list))
         }
     }
 }
 
-async fn get_local_folder(
+const MAX_RETRIES: usize = 3;
+
+async fn process_dir_entry(
+    http_client: Client,
+    file_path: PathBuf,
+    absolute_path: &PathBuf,
+    file_list: &mut TLocalFileCollection,
+    file_build_failed_list: &mut TFileBuildFailedList,
+) {
+    let local_file = LocalFile::new(http_client, &file_path).await;
+
+    match local_file {
+        Ok(local_file) => {
+            file_list.push(local_file);
+        }
+        Err(e) => {
+            file_build_failed_list.push(create_file_build_error(
+                e.to_string(),
+                absolute_path.to_owned(),
+            ));
+        }
+    }
+}
+
+async fn read_directory_entries(
     http_client: Client,
     absolute_path: &PathBuf,
-) -> Result<LocalFoldersResult, String> {
-    // 判断文件夹不存在，则返回空数组
-    if !absolute_path.exists() {
-        return Ok((Vec::new(), Vec::new()));
-    }
-
-    // 读取文件夹
-    let mut entries = tokio::fs::read_dir(absolute_path)
-        .await
-        .map_err(|e| e.to_string())?;
-
+    mut entries: tokio::fs::ReadDir,
+) -> LocalFoldersResult {
     let mut file_list: TLocalFileCollection = Vec::new();
-
     let mut file_build_failed_list: TFileBuildFailedList = Vec::new();
-
     let mut iter_err_count: usize = 0;
-    let max_iter_errors: usize = 3;
 
     // 顺序遍历出该层目录的全部文件，这里不需要tokio::spwan，因为本身已经是已步，而且是get_local_folders的子任务
     // 所以分太多子任务就导致内存浪费
@@ -65,34 +84,28 @@ async fn get_local_folder(
                     let file_path = dir_entry.path();
                     let http_client_clone = http_client.clone();
 
-                    let local_file =
-                        LocalFile::new(http_client_clone, &file_path)
-                            .await;
-
-                    match local_file {
-                        Ok(local_file) => {
-                            file_list.push(local_file);
-                        }
-                        Err(e) => {
-                            let file_build_failed = FileBuildError {
-                                cause: e.to_string(),
-                                path: absolute_path.to_owned(),
-                            };
-                            file_build_failed_list.push(file_build_failed);
-                        }
-                    }
+                    process_dir_entry(
+                        http_client_clone,
+                        file_path,
+                        absolute_path,
+                        &mut file_list,
+                        &mut file_build_failed_list,
+                    )
+                    .await;
+                } else {
+                    // 没有更多条目，退出循环
+                    break;
                 }
             }
             Err(e) => {
                 // 迭代器 next_entry() 出错了：重试几次后再退出
                 iter_err_count += 1;
 
-                // 可选：短暂退避，避免 tight loop
-                let backoff =
-                    Duration::from_millis(100 * iter_err_count as u64);
+                // 指数退避算法：2^n * 100ms
+                let backoff = Duration::from_millis(100 * (1 << iter_err_count));
                 sleep(backoff).await;
 
-                if iter_err_count > max_iter_errors {
+                if iter_err_count > MAX_RETRIES {
                     // 超过阈值，退出循环（保留已收集的 file_list）
                     eprintln!(
                         "error: read_dir.next_entry() failed {} times, aborting: {}",
@@ -108,7 +121,27 @@ async fn get_local_folder(
         }
     }
 
-    Ok((file_list, file_build_failed_list))
+    (file_list, file_build_failed_list)
+}
+
+async fn get_local_folder(
+    http_client: Client,
+    absolute_path: &PathBuf,
+) -> Result<LocalFoldersResult, String> {
+    // 判断文件夹不存在，则返回空数组
+    if !absolute_path.exists() {
+        return Ok((Vec::new(), Vec::new()));
+    }
+
+    // 读取文件夹
+    let entries = tokio::fs::read_dir(absolute_path)
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 遍历目录并收集文件
+    let result = read_directory_entries(http_client, absolute_path, entries).await;
+
+    Ok(result)
 }
 
 #[async_trait]
@@ -116,7 +149,7 @@ impl LocalFolders for WebDavClient {
     async fn get_local_folders(
         &self,
         key: &ClientKey,
-        paths: &Vec<String>,
+        paths: &[String],
     ) -> Result<Vec<Result<LocalFoldersResult, String>>, String> {
         let http_client_arc =
             self.get_http_client(key).map_err(|e| e.to_string())?;
@@ -127,21 +160,14 @@ impl LocalFolders for WebDavClient {
             async move {
                 // 判断该路径是文件
                 if absolute_path.is_file() {
-                    let local_file_result = create_single_file_result(
+                    create_single_file_result(
                         http_client_entity,
                         &absolute_path,
                     )
-                    .await;
-
-                    local_file_result
+                    .await
                 } else if absolute_path.is_dir() {
-                    let task_result = get_local_folder(
-                        http_client_entity,
-                        &absolute_path,
-                    )
-                    .await;
-
-                    task_result
+                    get_local_folder(http_client_entity, &absolute_path)
+                        .await
                 } else {
                     unreachable!() // 一般不会进这里
                 }
