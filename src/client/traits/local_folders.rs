@@ -1,13 +1,13 @@
+use std::path::PathBuf;
 use crate::client::structs::client_key::ClientKey;
 use crate::local_file::structs::local_file::LocalFile;
 use async_trait::async_trait;
-use tokio::fs::DirEntry;
 
 pub type TLocalFileCollection = Vec<LocalFile>;
 
 pub struct FileBuildError {
     pub cause: String,
-    pub dir_entry: DirEntry,
+    pub path: PathBuf,
 }
 
 pub type TFileBuildFailedList = Vec<FileBuildError>;

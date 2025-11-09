@@ -3,31 +3,35 @@ use crate::client::structs::client_key::ClientKey;
 use crate::client::traits::account::Account;
 use crate::client::traits::local_folders::{
     FileBuildError, LocalFolders, LocalFoldersResult,
-    TFileBuildFailedList, TLocalFileCollection, TLocalFileCollectionList,
+    TFileBuildFailedList, TLocalFileCollection,
 };
 use crate::local_file::structs::local_file::LocalFile;
 use async_trait::async_trait;
-use futures_util::TryFutureExt;
 use futures_util::future::join_all;
 use reqwest::Client;
 use std::path::PathBuf;
 use std::time::Duration;
-use tokio::fs::DirEntry;
 use tokio::time::sleep;
 
 async fn create_single_file_result(
     http_client: Client,
     absolute_path: &PathBuf,
-) -> Result<TLocalFileCollection, String> {
-    // 构建该文件
-    let local_file = LocalFile::new(http_client, &absolute_path)
-        .await
-        .map_err(|e| e.to_string())?;
-
-    let mut file_list = Vec::new();
-    file_list.push(local_file);
-
-    Ok(file_list)
+) -> Result<LocalFoldersResult, String> {
+    match LocalFile::new(http_client, &absolute_path).await {
+        Ok(local_file) => {
+            let file_list = vec![local_file];
+            let failed_list: TFileBuildFailedList = Vec::new(); // 此处暂时空，因为 new 成功
+            Ok((file_list, failed_list))
+        }
+        Err(e) => {
+            // 构建失败，把 dir_entry 模拟成失败项
+            let failed_list = vec![FileBuildError {
+                cause: e.to_string(),
+                path: absolute_path.to_owned(),
+            }];
+            Ok((Vec::new(), failed_list))
+        }
+    }
 }
 
 async fn get_local_folder(
@@ -72,7 +76,7 @@ async fn get_local_folder(
                         Err(e) => {
                             let file_build_failed = FileBuildError {
                                 cause: e.to_string(),
-                                dir_entry,
+                                path: absolute_path.to_owned(),
                             };
                             file_build_failed_list.push(file_build_failed);
                         }
@@ -127,9 +131,9 @@ impl LocalFolders for WebDavClient {
                         http_client_entity,
                         &absolute_path,
                     )
-                    .await?;
+                    .await;
 
-                    Ok((local_file_result, Vec::new()))
+                    local_file_result
                 } else if absolute_path.is_dir() {
                     let task_result = get_local_folder(
                         http_client_entity,
