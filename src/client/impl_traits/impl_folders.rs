@@ -1,7 +1,7 @@
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::raw_file_xml::MultiStatus;
 use crate::client::traits::account::Account;
-use crate::client::traits::folder::{
+use crate::client::traits::folders::{
     Folders, TResourcesFileCollectionList,
 };
 use crate::client::{THttpClientArc, WebDavClient};

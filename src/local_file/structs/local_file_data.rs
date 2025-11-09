@@ -1,8 +1,10 @@
+use std::fs::FileType;
 use std::path::PathBuf;
 use std::time::SystemTime;
 use tokio::fs;
 use tokio::fs::File;
 
+#[derive(Debug)]
 pub struct LocalFileData {
     file: File,
     path: PathBuf,
