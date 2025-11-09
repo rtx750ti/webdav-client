@@ -5,13 +5,25 @@ use reqwest::Client;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::fmt;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct LocalFile {
     data: Arc<LocalFileData>,
     http_client: Client,
     reactive_state: LocalFileProperty,
     reactive_config: LocalFileConfig,
+}
+
+impl fmt::Debug for LocalFile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LocalFile")
+            .field("data", &self.data)
+            .field("http_client", &"<Client with hidden authorization>")
+            .field("reactive_state", &self.reactive_state)
+            .field("reactive_config", &self.reactive_config)
+            .finish()
+    }
 }
 
 impl Deref for LocalFile {

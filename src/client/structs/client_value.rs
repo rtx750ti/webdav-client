@@ -5,6 +5,7 @@ use reqwest::{Client, Url};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use crate::client::format_base_url::format_base_url;
+use std::fmt;
 
 pub fn encrypt_str(data: &str) -> String {
     let mut hasher = Sha256::new();
@@ -12,12 +13,23 @@ pub fn encrypt_str(data: &str) -> String {
     format!("{:x}", hasher.finalize())
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct HttpClient {
     client: Client, // 这个客户端本身的clone就已经在内部实现了Rc，所以就不用Arc了
     base_url: Url,
     encrypted_username: String,
     encrypted_password: String,
+}
+
+impl fmt::Debug for HttpClient {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HttpClient")
+            .field("client", &"<Client with hidden authorization>")
+            .field("base_url", &self.base_url)
+            .field("encrypted_username", &self.encrypted_username)
+            .field("encrypted_password", &self.encrypted_password)
+            .finish()
+    }
 }
 
 impl HttpClient {
