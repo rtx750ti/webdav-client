@@ -102,7 +102,8 @@ async fn read_directory_entries(
                 iter_err_count += 1;
 
                 // 指数退避算法：2^n * 100ms
-                let backoff = Duration::from_millis(100 * (1 << iter_err_count));
+                let backoff =
+                    Duration::from_millis(100 * (1 << iter_err_count));
                 sleep(backoff).await;
 
                 if iter_err_count > MAX_RETRIES {
@@ -139,7 +140,8 @@ async fn get_local_folder(
         .map_err(|e| e.to_string())?;
 
     // 遍历目录并收集文件
-    let result = read_directory_entries(http_client, absolute_path, entries).await;
+    let result =
+        read_directory_entries(http_client, absolute_path, entries).await;
 
     Ok(result)
 }
@@ -157,7 +159,12 @@ impl LocalFolders for WebDavClient {
         let tasks = paths.iter().map(|path| {
             let http_client_entity = http_client_arc.get_client();
             let absolute_path = PathBuf::from(path);
+            
             async move {
+                if !absolute_path.exists() {
+                    return Err(format!("路径{:?}不存在", absolute_path));
+                }
+
                 // 判断该路径是文件
                 if absolute_path.is_file() {
                     create_single_file_result(

@@ -1,7 +1,7 @@
-use crate::{load_account, WEBDAV_ENV_PATH_1};
+use crate::{WEBDAV_ENV_PATH_1, load_account};
+use webdav_client::client::WebDavClient;
 use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::local_folders::LocalFolders;
-use webdav_client::client::WebDavClient;
 
 #[tokio::test]
 async fn test_get_local_folders() -> Result<(), String> {
@@ -42,7 +42,12 @@ async fn test_get_local_folders() -> Result<(), String> {
 
                 // 打印失败的文件
                 for (j, error) in failed.iter().enumerate() {
-                    println!("  失败 {}: {:?} - {}", j + 1, error.path, error.cause);
+                    println!(
+                        "  失败 {}: {:?} - {}",
+                        j + 1,
+                        error.path,
+                        error.cause
+                    );
                 }
             }
             Err(e) => {
@@ -69,7 +74,7 @@ async fn test_get_local_folders_with_file() -> Result<(), String> {
 
     // 测试单个文件路径
     let paths = vec![
-        "C:\\project\\rust\\quick-sync\\Cargo.toml".to_string(), // 文件路径
+        "C:\\project\\rust\\quick-sync\\webdav-client\\README1.md".to_string(), // 文件路径
     ];
 
     let results = client.get_local_folders(&key, &paths).await?;
