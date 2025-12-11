@@ -5,6 +5,7 @@ use crate::client::traits::local_folders::{
     FileBuildError, LocalFolders, LocalFoldersResult,
     TFileBuildFailedList, TLocalFileCollection,
 };
+use crate::global_config::global_config::GlobalConfig;
 use crate::local_file::structs::local_file::LocalFile;
 use async_trait::async_trait;
 use futures_util::future::join_all;
@@ -23,8 +24,10 @@ fn create_file_build_error(
 async fn create_single_file_result(
     http_client: Client,
     absolute_path: &PathBuf,
+    global_config: GlobalConfig,
 ) -> Result<LocalFoldersResult, String> {
-    match LocalFile::new(http_client, &absolute_path).await {
+    match LocalFile::new(http_client, &absolute_path, global_config).await
+    {
         Ok(local_file) => {
             let file_list = vec![local_file];
             let failed_list: TFileBuildFailedList = Vec::new(); // 此处暂时空，因为 new 成功
@@ -49,8 +52,10 @@ async fn process_dir_entry(
     absolute_path: &PathBuf,
     file_list: &mut TLocalFileCollection,
     file_build_failed_list: &mut TFileBuildFailedList,
+    global_config: GlobalConfig,
 ) {
-    let local_file = LocalFile::new(http_client, &file_path).await;
+    let local_file =
+        LocalFile::new(http_client, &file_path, global_config).await;
 
     match local_file {
         Ok(local_file) => {
@@ -69,6 +74,7 @@ async fn read_directory_entries(
     http_client: Client,
     absolute_path: &PathBuf,
     mut entries: tokio::fs::ReadDir,
+    global_config: GlobalConfig,
 ) -> LocalFoldersResult {
     let mut file_list: TLocalFileCollection = Vec::new();
     let mut file_build_failed_list: TFileBuildFailedList = Vec::new();
@@ -90,6 +96,7 @@ async fn read_directory_entries(
                         absolute_path,
                         &mut file_list,
                         &mut file_build_failed_list,
+                        global_config.clone(),
                     )
                     .await;
                 } else {
@@ -128,6 +135,7 @@ async fn read_directory_entries(
 async fn get_local_folder(
     http_client: Client,
     absolute_path: &PathBuf,
+    global_config: GlobalConfig,
 ) -> Result<LocalFoldersResult, String> {
     // 判断文件夹不存在，则返回空数组
     if !absolute_path.exists() {
@@ -140,8 +148,13 @@ async fn get_local_folder(
         .map_err(|e| e.to_string())?;
 
     // 遍历目录并收集文件
-    let result =
-        read_directory_entries(http_client, absolute_path, entries).await;
+    let result = read_directory_entries(
+        http_client,
+        absolute_path,
+        entries,
+        global_config,
+    )
+    .await;
 
     Ok(result)
 }
@@ -159,7 +172,7 @@ impl LocalFolders for WebDavClient {
         let tasks = paths.iter().map(|path| {
             let http_client_entity = http_client_arc.get_client();
             let absolute_path = PathBuf::from(path);
-            
+
             async move {
                 if !absolute_path.exists() {
                     return Err(format!("路径{:?}不存在", absolute_path));
@@ -170,11 +183,16 @@ impl LocalFolders for WebDavClient {
                     create_single_file_result(
                         http_client_entity,
                         &absolute_path,
+                        self.get_global_config(),
                     )
                     .await
                 } else if absolute_path.is_dir() {
-                    get_local_folder(http_client_entity, &absolute_path)
-                        .await
+                    get_local_folder(
+                        http_client_entity,
+                        &absolute_path,
+                        self.get_global_config(),
+                    )
+                    .await
                 } else {
                     unreachable!() // 一般不会进这里
                 }

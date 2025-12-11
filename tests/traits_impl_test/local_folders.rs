@@ -18,12 +18,10 @@ async fn test_get_local_folders() -> Result<(), String> {
 
     // 测试路径：可以根据实际情况修改
     let paths = vec![
-        "C:\\project\\rust\\quick-sync".to_string(), // 文件夹路径
+        r#"C:\game\mc\.minecraft\versions\versions\1.21.4-Fabric 0.18.1\mods"#.to_string(), // 文件夹路径
     ];
 
     let results = client.get_local_folders(&key, &paths).await?;
-
-    println!("获取的结果数量：{}", results.len());
 
     for (i, result) in results.iter().enumerate() {
         match result {
@@ -36,8 +34,13 @@ async fn test_get_local_folders() -> Result<(), String> {
                 );
 
                 // 打印前5个文件信息
-                for (j, file) in files.iter().take(5).enumerate() {
-                    println!("  文件 {}: {:?}", j + 1, file);
+                for (j, file) in files.iter().take(20).enumerate() {
+                    let meta_data = file.get_data().get_meta().await?;
+                    println!(
+                        "  文件 {}: 文件信息：{:?}",
+                        j + 1,
+                        meta_data.name
+                    );
                 }
 
                 // 打印失败的文件
@@ -74,7 +77,8 @@ async fn test_get_local_folders_with_file() -> Result<(), String> {
 
     // 测试单个文件路径
     let paths = vec![
-        "C:\\project\\rust\\quick-sync\\webdav-client\\README1.md".to_string(), // 文件路径
+        "C:\\project\\rust\\quick-sync\\webdav-client\\README1.md"
+            .to_string(), // 文件路径
     ];
 
     let results = client.get_local_folders(&key, &paths).await?;
