@@ -1,5 +1,5 @@
 pub(crate) mod chunked_download;
-pub(crate) mod handle_download;
+pub mod handle_download;
 pub(crate) mod not_chunked_download;
 
 use crate::resource_file::impl_traits::impl_download::handle_download::{

@@ -60,9 +60,12 @@ pub enum HandleDownloadError {
 
     #[error("chunked_download 出错: {0}")]
     ChunkedDownloadError(#[from] ChunkedDownloadError),
+
+    #[error("跳过下载路径: {0} ，因为该文件或文件夹已存在")]
+    PathExists(PathBuf),
 }
 
-pub struct HandleDownloadArgs {
+pub(crate) struct HandleDownloadArgs {
     pub(crate) resource_file_data: Arc<ResourceFileData>,
     pub(crate) save_absolute_path: PathBuf,
     pub(crate) http_client: Client,
@@ -71,9 +74,16 @@ pub struct HandleDownloadArgs {
     pub(crate) inner_config: ResourceConfig,
 }
 
-pub async fn handle_download(
+pub(crate) async fn handle_download(
     args: HandleDownloadArgs,
 ) -> Result<(), HandleDownloadError> {
+    // 首先判断本地文件中是否有该文件存在，如果有则不下载
+    if args.save_absolute_path.exists() {
+        return Err(HandleDownloadError::PathExists(
+            args.save_absolute_path,
+        ));
+    }
+
     // 这里不再处理任何文件夹的递归逻辑，交由库的使用者来处理递归情况
     if args.resource_file_data.is_dir {
         return Ok(());

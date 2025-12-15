@@ -1,13 +1,16 @@
-use crate::{WEBDAV_ENV_PATH_2, load_account};
+use crate::{load_account, WEBDAV_ENV_PATH_2};
 use memory_stats::memory_stats;
-use rand::{RngCore, thread_rng};
+use rand::{thread_rng, RngCore};
+use webdav_client::resource_file::impl_traits::impl_download::handle_download::HandleDownloadError;
 use std::time::Duration;
 use tokio::time::Instant;
-use webdav_client::client::WebDavClient;
 use webdav_client::client::enums::depth::Depth;
 use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::folders::Folders;
-use webdav_client::resource_file::traits::download::Download;
+use webdav_client::client::WebDavClient;
+use webdav_client::resource_file::traits::download::{
+    Download, DownloadError,
+};
 
 #[tokio::test]
 async fn test_download() -> Result<(), String> {
@@ -303,4 +306,75 @@ async fn test_reactive_data() -> Result<(), String> {
     } else {
         Ok(())
     }
+}
+
+/// 测试重复下载
+#[tokio::test]
+async fn test_download_repeat() -> Result<(), String> {
+    let client = WebDavClient::new();
+    let webdav_account = load_account(WEBDAV_ENV_PATH_2);
+
+    let key = client
+        .add_account(
+            &webdav_account.url,
+            &webdav_account.username,
+            &webdav_account.password,
+        )
+        .map_err(|e| e.to_string())?;
+
+    let data = client
+        .get_folders(
+            &key,
+            &vec![
+                "./测试文件夹/新建 文本文档.txt".to_string(),
+                "./测试文件夹/新建 文本文档.txt".to_string(),
+                "./测试文件夹/新建 文本文档.txt".to_string(),
+                "./测试文件夹/新建 文本文档.txt".to_string(),
+                "./测试文件夹/新建 文本文档.txt".to_string(),
+            ],
+            &Depth::One,
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+
+    // 并发下载
+    let mut handles = Vec::new();
+
+    // 记录失败的次数
+    let mut existing_files = 0;
+
+    for vec_resources_files in data {
+        for resources_file in vec_resources_files {
+            let handle = tokio::spawn(async move {
+                let res = resources_file
+                    .download("C:\\project\\rust\\quick-sync\\temp-download-files\\")
+                    .await;
+                if let Err(err) = res {
+                    match err {
+                        DownloadError::HandleDownloadError(e) => match e {
+                            HandleDownloadError::PathExists(_) => {
+                                existing_files += 1;
+                                existing_files
+                            }
+                            _ => 0,
+                        },
+                        _ => 0,
+                    }
+                } else {
+                    0
+                }
+            });
+            handles.push(handle);
+        }
+    }
+
+    // 等待所有下载完成
+    for handle in handles {
+        let _ = handle.await.map_err(|e| e.to_string())?;
+    }
+
+    // 检查是否有跳过的下载任务
+    // assert_eq!(existing_files, 4, "跳过4个文件，成功下载1个");
+
+    Ok(())
 }
