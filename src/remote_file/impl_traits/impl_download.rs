@@ -2,14 +2,14 @@ pub(crate) mod chunked_download;
 pub mod handle_download;
 pub(crate) mod not_chunked_download;
 
-use crate::resource_file::impl_traits::impl_download::handle_download::{
+use crate::remote_file::impl_traits::impl_download::handle_download::{
     HandleDownloadArgs, handle_download,
 };
-use crate::resource_file::structs::resource_file_data::ResourceFileData;
-use crate::resource_file::structs::resources_file::{
-    LockFileError, ResourcesFile, UnlockFileError,
+use crate::remote_file::structs::remote_file_data::RemoteFileData;
+use crate::remote_file::structs::remote_file::{
+    LockFileError, RemoteFile, UnlockFileError,
 };
-use crate::resource_file::traits::download::{Download, DownloadError};
+use crate::remote_file::traits::download::{Download, DownloadError};
 use async_trait::async_trait;
 use std::convert::Infallible;
 use std::path::PathBuf;
@@ -25,16 +25,16 @@ pub enum PreprocessingSavePathError {
 
 /// 预处理保存文件路径
 fn preprocessing_save_path(
-    resource_file_data: Arc<ResourceFileData>,
+    remote_file_data: Arc<RemoteFileData>,
     save_absolute_path: &str,
 ) -> Result<PathBuf, PreprocessingSavePathError> {
     // 预处理保存文件的完整路径
     let path = PathBuf::from_str(save_absolute_path)?;
 
-    if resource_file_data.is_dir {
+    if remote_file_data.is_dir {
         Ok(path)
     } else {
-        Ok(path.join(&resource_file_data.name))
+        Ok(path.join(&remote_file_data.name))
     }
 }
 
@@ -51,7 +51,7 @@ pub enum HandleUnmountedError {
 }
 
 #[async_trait]
-impl Download for ResourcesFile {
+impl Download for RemoteFile {
     async fn download(
         self,
         save_absolute_path: &str,
@@ -71,7 +71,7 @@ impl Download for ResourcesFile {
         let http_client = self.get_http_client();
 
         let handle_download_args = HandleDownloadArgs {
-            resource_file_data: self.get_data(),
+            remote_file_data: self.get_data(),
             save_absolute_path,
             http_client: http_client.clone(),
             global_config: self.get_global_config(),

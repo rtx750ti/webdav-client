@@ -1,8 +1,8 @@
 use crate::global_config::global_config::GlobalConfig;
 use crate::reactive::reactive::ReactivePropertyError;
-use crate::resource_file::structs::resource_config::ResourceConfig;
-use crate::resource_file::structs::resource_file_data::ResourceFileData;
-use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
+use crate::remote_file::structs::remote_file_config::RemoteConfig;
+use crate::remote_file::structs::remote_file_data::RemoteFileData;
+use crate::remote_file::structs::remote_file_property::RemoteFileProperty;
 use futures_util::StreamExt;
 use reqwest::Client;
 use std::path::PathBuf;
@@ -31,11 +31,11 @@ pub enum NotChunkedDownloadError {
 
 pub struct NotChunkedDownloadArgs {
     pub(crate) http_client: Client,
-    pub(crate) resource_file_data: Arc<ResourceFileData>,
+    pub(crate) remote_file_data: Arc<RemoteFileData>,
     pub(crate) save_absolute_path: PathBuf,
     pub(crate) global_config: GlobalConfig,
-    pub(crate) inner_state: ResourceFileProperty,
-    pub(crate) inner_config: ResourceConfig,
+    pub(crate) inner_state: RemoteFileProperty,
+    pub(crate) inner_config: RemoteConfig,
 }
 
 pub async fn not_chunked_download(
@@ -43,7 +43,7 @@ pub async fn not_chunked_download(
 ) -> Result<(), NotChunkedDownloadError> {
     let resp = args
         .http_client
-        .get(&args.resource_file_data.absolute_path)
+        .get(&args.remote_file_data.absolute_path)
         .send()
         .await?;
 

@@ -1,9 +1,9 @@
 use crate::client::structs::raw_file_xml::{
     CurrentUserPrivilegeSet, MultiStatus, Prop, PropStat, Response,
 };
-use crate::resource_file::structs::resource_file_data::ResourceFileData;
-use crate::resource_file::traits::to_resource_file_data::{
-    ToResourceFileData, ToResourceFileDataError,
+use crate::remote_file::structs::remote_file_data::RemoteFileData;
+use crate::remote_file::traits::to_remote_file_data::{
+    ToRemoteFileDataError, ToRemoteFileData,
 };
 use reqwest::Url;
 
@@ -66,11 +66,11 @@ fn clean_etag(raw: Option<String>) -> Option<String> {
     raw.map(|s| s.trim().trim_matches('"').to_string())
 }
 
-impl ToResourceFileData for MultiStatus {
-    fn to_resource_file_data(
+impl ToRemoteFileData for MultiStatus {
+    fn to_remote_file_data(
         self,
         base_url: &Url,
-    ) -> Result<Vec<ResourceFileData>, ToResourceFileDataError> {
+    ) -> Result<Vec<RemoteFileData>, ToRemoteFileDataError> {
         let mut resources = Vec::new();
 
         let mut iter = self.responses.into_iter();
@@ -119,7 +119,7 @@ impl ToResourceFileData for MultiStatus {
                 .unwrap_or_else(|_| href.clone());
 
             // 构造最终 FriendlyResource，绝大部分字段直接 move
-            resources.push(ResourceFileData {
+            resources.push(RemoteFileData {
                 base_url: base_url.clone(),
                 relative_root_path: href, // move
                 absolute_path,

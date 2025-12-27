@@ -1,11 +1,11 @@
 use crate::global_config::global_config::GlobalConfig;
-use crate::resource_file::structs::resource_config::ResourceConfig;
-use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
-use crate::resource_file::structs::resource_file_data::ResourceFileData;
-use crate::resource_file::traits::download::TDownloadConfig;
-use crate::resource_file::impl_traits::impl_download::chunked_download::black_list::is_chunked_download_blacklisted;
-use crate::resource_file::impl_traits::impl_download::chunked_download::{chunked_download, ChunkedDownloadArgs, ChunkedDownloadError};
-use crate::resource_file::impl_traits::impl_download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs, NotChunkedDownloadError};
+use crate::remote_file::structs::remote_file_config::RemoteConfig;
+use crate::remote_file::structs::remote_file_property::RemoteFileProperty;
+use crate::remote_file::structs::remote_file_data::RemoteFileData;
+use crate::remote_file::traits::download::TDownloadConfig;
+use crate::remote_file::impl_traits::impl_download::chunked_download::black_list::is_chunked_download_blacklisted;
+use crate::remote_file::impl_traits::impl_download::chunked_download::{chunked_download, ChunkedDownloadArgs, ChunkedDownloadError};
+use crate::remote_file::impl_traits::impl_download::not_chunked_download::{not_chunked_download, NotChunkedDownloadArgs, NotChunkedDownloadError};
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -38,7 +38,7 @@ async fn download_without_chunking(
 ) -> Result<(), DownloadWithoutChunkingError> {
     let not_chunked_download_args = NotChunkedDownloadArgs {
         http_client: args.http_client,
-        resource_file_data: args.resource_file_data,
+        remote_file_data: args.remote_file_data,
         save_absolute_path: args.save_absolute_path,
         global_config: args.global_config,
         inner_state: args.inner_state,
@@ -66,12 +66,12 @@ pub enum HandleDownloadError {
 }
 
 pub(crate) struct HandleDownloadArgs {
-    pub(crate) resource_file_data: Arc<ResourceFileData>,
+    pub(crate) remote_file_data: Arc<RemoteFileData>,
     pub(crate) save_absolute_path: PathBuf,
     pub(crate) http_client: Client,
     pub(crate) global_config: GlobalConfig,
-    pub(crate) inner_state: ResourceFileProperty,
-    pub(crate) inner_config: ResourceConfig,
+    pub(crate) inner_state: RemoteFileProperty,
+    pub(crate) inner_config: RemoteConfig,
 }
 
 pub(crate) async fn handle_download(
@@ -85,19 +85,19 @@ pub(crate) async fn handle_download(
     }
 
     // 这里不再处理任何文件夹的递归逻辑，交由库的使用者来处理递归情况
-    if args.resource_file_data.is_dir {
+    if args.remote_file_data.is_dir {
         return Ok(());
     }
 
     // 黑名单检查
     if is_chunked_download_blacklisted(
-        &args.resource_file_data.base_url.to_string(),
+        &args.remote_file_data.base_url.to_string(),
     ) {
         return Ok(download_without_chunking(args).await?);
     }
 
     // 文件大小阈值检查
-    if let Some(size) = args.resource_file_data.size {
+    if let Some(size) = args.remote_file_data.size {
         let threshold = get_large_file_threshold(&args.global_config)?;
         if size < threshold {
             return Ok(download_without_chunking(args).await?);
@@ -106,7 +106,7 @@ pub(crate) async fn handle_download(
 
     // 默认使用分片下载
     let chunked_download_args = ChunkedDownloadArgs {
-        resource_file_data: args.resource_file_data,
+        remote_file_data: args.remote_file_data,
         http_client: args.http_client,
         save_absolute_path: args.save_absolute_path,
         global_config: args.global_config,

@@ -1,9 +1,9 @@
-use crate::{load_account, WEBDAV_ENV_PATH_1};
+use crate::{WEBDAV_ENV_PATH_1, load_account};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
-use webdav_client::client::traits::account::{Account, AccountError};
 use webdav_client::client::WebDavClient;
+use webdav_client::client::traits::account::{Account, AccountError};
 
 #[tokio::test]
 async fn test_add_account() -> Result<(), AccountError> {
@@ -110,6 +110,9 @@ async fn test_remove_account_force() -> Result<(), AccountError> {
     ) {
         Ok(key) => {
             // 多次获取引用并保留到变量中，让它们在延迟期间都活着
+            let _ = client.get_http_client(&key)?;
+            let _ = client.get_http_client(&key)?;
+            let _ = client.get_http_client(&key)?;
             let _ = client.get_http_client(&key)?;
             let _ = client.get_http_client(&key)?;
             let _ = client.get_http_client(&key)?;

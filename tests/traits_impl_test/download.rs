@@ -1,14 +1,14 @@
 use crate::{load_account, WEBDAV_ENV_PATH_2};
 use memory_stats::memory_stats;
 use rand::{thread_rng, RngCore};
-use webdav_client::resource_file::impl_traits::impl_download::handle_download::HandleDownloadError;
+use webdav_client::remote_file::impl_traits::impl_download::handle_download::HandleDownloadError;
 use std::time::Duration;
 use tokio::time::Instant;
 use webdav_client::client::enums::depth::Depth;
 use webdav_client::client::traits::account::Account;
 use webdav_client::client::traits::folders::Folders;
 use webdav_client::client::WebDavClient;
-use webdav_client::resource_file::traits::download::{
+use webdav_client::remote_file::traits::download::{
     Download, DownloadError,
 };
 
@@ -30,14 +30,15 @@ async fn test_download() -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    for vec_resources_files in data {
-        for resources_file in vec_resources_files {
-            let _resources_file_arc = resources_file
-                .download(
-                    "C:\\project\\rust\\quick-sync\\temp-download-files\\",
-                )
-                .await
-                .map_err(|e| e.to_string())?;
+    for vec_remote_files in data {
+        for remote_file in vec_remote_files {
+            println!("获取到的文件列表：{:?}", remote_file);
+            // let _remotes_file_arc = remote_file
+            //     .download(
+            //         "C:\\project\\rust\\quick-sync\\temp-download-files\\",
+            //     )
+            //     .await
+            //     .map_err(|e| e.to_string())?;
         }
     }
     Ok(())
@@ -65,13 +66,13 @@ async fn test_download_progress_monitoring() -> Result<(), String> {
         .await
         .map_err(|e| e.to_string())?;
 
-    for vec_resources_files in data {
-        for resources_file in vec_resources_files {
+    for vec_remote_files in data {
+        for remote_file in vec_remote_files {
             // 假设这里有你现成的获取方法：请替换为你代码里真实存在的方法名
-            let state = resources_file.get_reactive_state();
+            let state = remote_file.get_reactive_state();
 
             let mut watcher = state.get_download_bytes().watch();
-            let total = resources_file.get_data().size.unwrap();
+            let total = remote_file.get_data().size.unwrap();
 
             // 启动监听
             tokio::spawn({
@@ -94,7 +95,7 @@ async fn test_download_progress_monitoring() -> Result<(), String> {
             });
 
             // 调用现有的 download，不改签名
-            let _ = resources_file
+            let _ = remote_file
                 .download(
                     "C:\\project\\rust\\quick-sync\\temp-download-files\\",
                 )
@@ -143,15 +144,15 @@ async fn test_download_pause() -> Result<(), String> {
         global_config.try_resume().unwrap();
     });
 
-    for vec_resources_files in data {
-        for resources_file in vec_resources_files {
+    for vec_remote_files in data {
+        for remote_file in vec_remote_files {
             // 假设这里有你现成的获取方法：请替换为你代码里真实存在的方法名
-            let state = resources_file.get_reactive_state();
+            let state = remote_file.get_reactive_state();
 
             let mut watcher = state.get_download_bytes().watch();
-            let total = resources_file.get_data().size.unwrap();
+            let total = remote_file.get_data().size.unwrap();
 
-            let config = resources_file.get_reactive_config();
+            let config = remote_file.get_reactive_config();
             let _config_watcher = config.watch();
 
             // 启动监听
@@ -189,7 +190,7 @@ async fn test_download_pause() -> Result<(), String> {
             });
 
             // 调用现有的 download，不改签名
-            let _ = resources_file
+            let _ = remote_file
                 .download(
                     "C:\\project\\rust\\quick-sync\\temp-download-files\\",
                 )
@@ -343,10 +344,10 @@ async fn test_download_repeat() -> Result<(), String> {
     // 记录失败的次数
     let mut existing_files = 0;
 
-    for vec_resources_files in data {
-        for resources_file in vec_resources_files {
+    for vec_remote_files in data {
+        for remote_file in vec_remote_files {
             let handle = tokio::spawn(async move {
-                let res = resources_file
+                let res = remote_file
                     .download("C:\\project\\rust\\quick-sync\\temp-download-files\\")
                     .await;
                 if let Err(err) = res {

@@ -1,10 +1,10 @@
 use crate::global_config::global_config::GlobalConfig;
-use crate::resource_file::structs::resources_file::ResourcesFile;
+use crate::remote_file::structs::remote_file::RemoteFile;
 use chrono::{DateTime, FixedOffset};
 use reqwest::{Client, Url};
 
 #[derive(Debug, Clone)]
-pub struct ResourceFileData {
+pub struct RemoteFileData {
     pub base_url: Url,
     pub relative_root_path: String, // 文件的相对路径（相对根目录）
     pub absolute_path: String,      // 文件的完整路径（从 href 拿到）
@@ -18,12 +18,12 @@ pub struct ResourceFileData {
     pub privileges: Vec<String>,    // 权限列表
 }
 
-impl ResourceFileData {
-    pub fn to_resources_file(
+impl RemoteFileData {
+    pub fn to_remote_file(
         self,
         http_client: Client,
         global_config: GlobalConfig,
-    ) -> ResourcesFile {
-        ResourcesFile::new(self, http_client, global_config)
+    ) -> RemoteFile {
+        RemoteFile::new(self, http_client, global_config)
     }
 }

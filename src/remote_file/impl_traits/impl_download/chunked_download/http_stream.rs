@@ -1,7 +1,7 @@
 use crate::global_config::global_config::GlobalConfig;
 use crate::reactive::reactive::ReactivePropertyError;
-use crate::resource_file::structs::resource_config::ResourceConfig;
-use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
+use crate::remote_file::structs::remote_file_config::RemoteConfig;
+use crate::remote_file::structs::remote_file_property::RemoteFileProperty;
 use bytes::Bytes;
 use futures_util::StreamExt;
 use reqwest::header::RANGE;
@@ -53,7 +53,7 @@ pub struct HandleBytesStreamArgs<'a> {
     pub chunk: Bytes,
     pub current_file_seek_start: u64,
     pub file: &'a mut File,
-    pub inner_state: ResourceFileProperty,
+    pub inner_state: RemoteFileProperty,
 }
 
 async fn handle_bytes_stream<'a>(
@@ -98,11 +98,11 @@ pub struct DownloadRangeFileArgs<'a> {
     pub file_url: &'a str,
     pub file: &'a mut File,
     pub start: u64,
-    pub inner_state: ResourceFileProperty,
+    pub inner_state: RemoteFileProperty,
     #[allow(dead_code)]
     pub global_config: GlobalConfig,
     #[allow(dead_code)]
-    pub inner_config: ResourceConfig,
+    pub inner_config: RemoteConfig,
 }
 
 pub async fn download_range_file<'a>(
@@ -150,7 +150,7 @@ pub async fn download_range_file<'a>(
             chunk,
             current_file_seek_start,
             file: args.file,
-            inner_state: args.inner_state.clone(), // 如果 ResourceFileProperty 可 Clone
+            inner_state: args.inner_state.clone(), // 如果 RemoteFileProperty 可 Clone
         };
 
         handle_bytes_stream(handle_bytes_stream_args).await?;

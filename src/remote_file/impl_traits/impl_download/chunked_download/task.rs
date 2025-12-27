@@ -1,9 +1,9 @@
 use crate::global_config::global_config::GlobalConfig;
-use crate::resource_file::structs::resource_config::ResourceConfig;
-use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
-use crate::resource_file::impl_traits::impl_download::chunked_download::file::{clone_file_handle, CloneFileHandleError};
-use crate::resource_file::impl_traits::impl_download::chunked_download::http_stream::{download_range_file, DownloadRangeFileArgs, DownloadRangeFileError};
-use crate::resource_file::impl_traits::impl_download::chunked_download::CHUNK_SIZE;
+use crate::remote_file::structs::remote_file_config::RemoteConfig;
+use crate::remote_file::structs::remote_file_property::RemoteFileProperty;
+use crate::remote_file::impl_traits::impl_download::chunked_download::file::{clone_file_handle, CloneFileHandleError};
+use crate::remote_file::impl_traits::impl_download::chunked_download::http_stream::{download_range_file, DownloadRangeFileArgs, DownloadRangeFileError};
+use crate::remote_file::impl_traits::impl_download::chunked_download::CHUNK_SIZE;
 use futures_util::future::join_all;
 use reqwest::Client;
 use std::cmp::min;
@@ -27,9 +27,9 @@ pub struct DownloadTaskArgs<'a> {
     pub start: u64,
     pub total_size: u64,
     pub file: File,
-    pub inner_state: &'a ResourceFileProperty,
+    pub inner_state: &'a RemoteFileProperty,
     pub global_config: GlobalConfig,
-    pub inner_config: ResourceConfig,
+    pub inner_config: RemoteConfig,
 }
 
 pub type DownloadTasks = Vec<JoinHandle<Result<(), BuildDownloadTasksError>>>;
@@ -40,9 +40,9 @@ struct DownloadTaskContext {
     pub range_header_str: String,
     pub file: File,
     pub start: u64,
-    pub inner_state: ResourceFileProperty,
+    pub inner_state: RemoteFileProperty,
     pub global_config: GlobalConfig,
-    pub inner_config: ResourceConfig,
+    pub inner_config: RemoteConfig,
 }
 
 impl DownloadTaskContext {

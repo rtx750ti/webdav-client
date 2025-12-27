@@ -1,9 +1,10 @@
+use std::fmt;
 use crate::client::structs::client_key::TClientKey;
 use crate::global_config::global_config::GlobalConfig;
 use crate::reactive::reactive::ReactivePropertyError;
-use crate::resource_file::structs::resource_config::ResourceConfig;
-use crate::resource_file::structs::resource_file_data::ResourceFileData;
-use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
+use crate::remote_file::structs::remote_file_config::RemoteConfig;
+use crate::remote_file::structs::remote_file_data::RemoteFileData;
+use crate::remote_file::structs::remote_file_property::RemoteFileProperty;
 use reqwest::Client;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -11,7 +12,7 @@ use std::time::Duration;
 use thiserror::Error;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub struct ResourceFileUniqueKey {
+pub struct RemoteFileUniqueKey {
     pub client_key: TClientKey,
     pub relative_path: String,
 }
@@ -22,18 +23,30 @@ const FILE_LOCK_RETRY_TIMES: usize = 3;
 // 每次锁定/解锁的尝试间隔时间
 const FILE_LOCK_RETRY_DELAY: Duration = Duration::from_secs(1);
 
-#[derive(Debug, Clone)]
-pub struct ResourcesFile {
+#[derive(Clone)]
+pub struct RemoteFile {
     /// 资源文件原始数据
-    data: Arc<ResourceFileData>,
+    data: Arc<RemoteFileData>,
     http_client: Client,
-    reactive_state: ResourceFileProperty,
-    reactive_config: ResourceConfig,
+    reactive_state: RemoteFileProperty,
+    reactive_config: RemoteConfig,
     global_config: GlobalConfig,
 }
 
-impl Deref for ResourcesFile {
-    type Target = ResourceFileProperty;
+impl fmt::Debug for RemoteFile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("RemoteFile")
+            .field("http_client", &"<HttpClient with hidden authorization>")
+            .field("data", &self.data)
+            .field("reactive_state", &self.reactive_state)
+            .field("reactive_config", &self.reactive_config)
+            .field("global_config", &self.global_config)
+            .finish()
+    }
+}
+
+impl Deref for RemoteFile {
+    type Target = RemoteFileProperty;
 
     fn deref(&self) -> &Self::Target {
         &self.reactive_state
@@ -78,14 +91,14 @@ pub enum UnlockFileError {
     Unknown(String),
 }
 
-impl ResourcesFile {
+impl RemoteFile {
     pub fn new(
-        data: ResourceFileData,
+        data: RemoteFileData,
         http_client: Client,
         global_config: GlobalConfig,
     ) -> Self {
-        let reactive_state = ResourceFileProperty::new(data.name.clone());
-        let reactive_config = ResourceConfig::default();
+        let reactive_state = RemoteFileProperty::new(data.name.clone());
+        let reactive_config = RemoteConfig::default();
         Self {
             data: Arc::new(data),
             http_client,
@@ -95,16 +108,16 @@ impl ResourcesFile {
         }
     }
 
-    pub fn get_reactive_state(&self) -> ResourceFileProperty {
+    pub fn get_reactive_state(&self) -> RemoteFileProperty {
         self.reactive_state.clone()
     }
 
-    pub fn get_reactive_config(&self) -> ResourceConfig {
+    pub fn get_reactive_config(&self) -> RemoteConfig {
         self.reactive_config.clone()
     }
 
     /// 获取资源文件的原始数据
-    pub fn get_data(&self) -> Arc<ResourceFileData> {
+    pub fn get_data(&self) -> Arc<RemoteFileData> {
         self.data.clone()
     }
 

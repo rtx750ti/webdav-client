@@ -2,7 +2,7 @@ use crate::reactive::reactive::ReactiveProperty;
 use std::ops::Deref;
 
 #[derive(Debug, Clone)]
-pub struct ResourceConfigData {
+pub struct RemoteFileConfigData {
     /// 最大限速
     pub max_speed: Option<u64>,
     /// 超时
@@ -17,32 +17,32 @@ pub struct ResourceConfigData {
     pub pause: bool,
 }
 
-type TResourceConfigData = ReactiveProperty<ResourceConfigData>;
+type TRemoteConfigData = ReactiveProperty<RemoteFileConfigData>;
 
 #[derive(Debug, Clone)]
-pub struct ResourceConfig {
+pub struct RemoteConfig {
     /// 配置内部数据
-    inner: ReactiveProperty<ResourceConfigData>,
+    inner: ReactiveProperty<RemoteFileConfigData>,
 }
 
-impl ResourceConfig {
+impl RemoteConfig {
     pub fn is_paused(&self) -> bool {
         self.get_current().map(|cfg| cfg.pause).unwrap_or(false)
     }
 }
 
-impl Deref for ResourceConfig {
-    type Target = TResourceConfigData;
+impl Deref for RemoteConfig {
+    type Target = TRemoteConfigData;
 
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
 }
 
-impl Default for ResourceConfig {
+impl Default for RemoteConfig {
     fn default() -> Self {
         Self {
-            inner: ReactiveProperty::new(ResourceConfigData {
+            inner: ReactiveProperty::new(RemoteFileConfigData {
                 max_speed: None,
                 timeout_secs: 15,
                 max_retries: 10,

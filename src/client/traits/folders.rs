@@ -1,7 +1,7 @@
 use crate::client::enums::depth::Depth;
 use crate::client::structs::client_key::ClientKey;
 use crate::client::webdav_request::get_folders_public_impl::GetFoldersError;
-use crate::resource_file::structs::resources_file::ResourcesFile;
+use crate::remote_file::structs::remote_file::RemoteFile;
 use async_trait::async_trait;
 
 #[derive(Debug, thiserror::Error)]
@@ -11,9 +11,9 @@ pub enum FoldersError {
 }
 
 /// 资源文件集合
-pub type TResourcesFileCollection = Vec<ResourcesFile>;
+pub type TRemoteFileCollection = Vec<RemoteFile>;
 /// 资源文件组（包含多个资源文件集合）
-pub type TResourcesFileCollectionList = Vec<TResourcesFileCollection>;
+pub type TRemoteFileCollectionList = Vec<TRemoteFileCollection>;
 
 #[async_trait]
 pub trait Folders {
@@ -28,7 +28,7 @@ pub trait Folders {
     ///
     /// # 返回值
     ///
-    /// - 成功时返回 [`TResourcesFileCollectionList`]：  
+    /// - 成功时返回 [`TRemoteFileCollectionList`]：  
     ///   一个“资源文件集合列表”，其中每个集合对应一个输入路径的结果。
     /// - 失败时返回 [`GetFoldersError`]，调用方可根据错误类型进行处理。
     ///
@@ -67,5 +67,5 @@ pub trait Folders {
         key: &ClientKey,
         paths: &Vec<String>,
         depth: &Depth,
-    ) -> Result<TResourcesFileCollectionList, GetFoldersError>;
+    ) -> Result<TRemoteFileCollectionList, GetFoldersError>;
 }

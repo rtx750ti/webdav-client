@@ -1,13 +1,13 @@
 use crate::reactive::reactive::ReactiveProperty;
 
 #[derive(Debug, Clone)]
-pub struct ResourceFileProperty {
+pub struct RemoteFileProperty {
     pub name: ReactiveProperty<String>,
     pub download_bytes: ReactiveProperty<usize>,
     pub file_lock: ReactiveProperty<bool>, // 文件锁，主要用于限制下载时用户尝试修改文件名的操作
 }
 
-impl ResourceFileProperty {
+impl RemoteFileProperty {
     pub fn new(name: String) -> Self {
         Self {
             name: ReactiveProperty::new(name),

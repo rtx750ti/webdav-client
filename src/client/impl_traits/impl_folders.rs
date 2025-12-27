@@ -2,14 +2,14 @@ use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::raw_file_xml::MultiStatus;
 use crate::client::traits::account::Account;
 use crate::client::traits::folders::{
-    Folders, TResourcesFileCollectionList,
+    Folders, TRemoteFileCollectionList,
 };
 use crate::client::{THttpClientArc, WebDavClient};
 use crate::global_config::global_config::GlobalConfig;
 use crate::client::webdav_request::get_folders_public_impl::{
     get_folders_with_client, GetFoldersError,
 };
-use crate::resource_file::traits::to_resource_file_data::ToResourceFileData;
+use crate::remote_file::traits::to_remote_file_data::ToRemoteFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;
 use reqwest::Url;
@@ -26,25 +26,25 @@ pub struct HandleResultArgs {
 
 pub fn handle_result(
     arg: HandleResultArgs,
-) -> Result<TResourcesFileCollectionList, GetFoldersError> {
+) -> Result<TRemoteFileCollectionList, GetFoldersError> {
     let mut all_files = Vec::new();
 
     for res in arg.results {
         match res {
             Ok(multi_status) => {
-                let mut resources_files = Vec::new();
-                let resource_data_list =
-                    multi_status.to_resource_file_data(&arg.base_url)?;
+                let mut remote_files = Vec::new();
+                let remote_file_data_list =
+                    multi_status.to_remote_file_data(&arg.base_url)?;
 
-                for resource_file_data in resource_data_list {
-                    resources_files.push(
-                        resource_file_data.to_resources_file(
+                for remote_file_data in remote_file_data_list {
+                    remote_files.push(
+                        remote_file_data.to_remote_file(
                             arg.http_client_arc.get_client(),
                             arg.global_config.clone(),
                         ),
                     )
                 }
-                all_files.push(resources_files)
+                all_files.push(remote_files)
             }
             Err(e) => {
                 eprintln!("{}", e);
@@ -62,7 +62,7 @@ impl Folders for WebDavClient {
         key: &ClientKey,
         paths: &Vec<String>,
         depth: &Depth,
-    ) -> Result<TResourcesFileCollectionList, GetFoldersError> {
+    ) -> Result<TRemoteFileCollectionList, GetFoldersError> {
         let http_client_arc = self.get_http_client(key)?;
 
         // 构建所有任务（这里只做并发请求）

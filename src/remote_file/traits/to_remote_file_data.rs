@@ -1,10 +1,10 @@
-use crate::resource_file::structs::resource_file_data::ResourceFileData;
+use crate::remote_file::structs::remote_file_data::RemoteFileData;
 use reqwest::Url;
 use std::io;
 
 /// 资源文件的转换非常复杂，所以必须抽离成独立的错误
 #[derive(Debug, thiserror::Error)]
-pub enum ToResourceFileDataError {
+pub enum ToRemoteFileDataError {
     #[error("资源文件数据转换失败: {0}")]
     ConversionFailed(String),
 
@@ -25,14 +25,14 @@ pub enum ToResourceFileDataError {
 }
 
 #[derive(Debug, thiserror::Error)]
-pub enum ResourceFileDataError {
+pub enum RemoteFileDataError {
     #[error("转换资源文件错误: {0}")]
-    ToResourceFileData(#[from] ToResourceFileDataError)
+    ToRemoteFileData(#[from] ToRemoteFileDataError)
 }
 
-pub trait ToResourceFileData {
-    fn to_resource_file_data(
+pub trait ToRemoteFileData {
+    fn to_remote_file_data(
         self,
         base_url: &Url,
-    ) -> Result<Vec<ResourceFileData>, ToResourceFileDataError>;
+    ) -> Result<Vec<RemoteFileData>, ToRemoteFileDataError>;
 }

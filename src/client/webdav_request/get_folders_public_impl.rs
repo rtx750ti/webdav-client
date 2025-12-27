@@ -1,12 +1,12 @@
+use crate::client::enums::depth::Depth;
+use crate::client::enums::webdav_method::WebDavMethod;
 use crate::client::structs::raw_file_xml::MultiStatus;
 use crate::client::traits::account::AccountError;
-use crate::resource_file::traits::to_resource_file_data::ToResourceFileDataError;
+use crate::client::traits::url_format::UrlFormatError;
+use crate::remote_file::traits::to_remote_file_data::ToRemoteFileDataError;
 use quick_xml::de::from_str;
 use reqwest::header::{HeaderMap, HeaderValue, CONTENT_TYPE};
 use reqwest::Client;
-use crate::client::enums::depth::Depth;
-use crate::client::enums::webdav_method::WebDavMethod;
-use crate::client::traits::url_format::UrlFormatError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum GetFoldersError {
@@ -20,7 +20,7 @@ pub enum GetFoldersError {
     StatusParseError(String),
 
     #[error("资源文件出错->{0}")]
-    ToResourceFileDataError(#[from] ToResourceFileDataError),
+    ToRemoteFileDataError(#[from] ToRemoteFileDataError),
 
     #[error("URL 格式错误->{0}")]
     FormatUrlError(String),
@@ -33,9 +33,6 @@ pub enum GetFoldersError {
 
     #[error("解析URL地址错误->{0}")]
     UrlFormatError(#[from] UrlFormatError),
-
-    #[error("无法找到对应的资源收集器->账号:{0}地址:{1}")]
-    NotFindResourceCollector(String, String),
 }
 
 const PROPFIND_BODY: &str = r#"<?xml version="1.0" encoding="utf-8" ?>

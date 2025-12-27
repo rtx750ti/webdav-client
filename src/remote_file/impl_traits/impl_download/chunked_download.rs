@@ -4,11 +4,11 @@ pub(crate) mod http_stream;
 pub(crate) mod task;
 
 use crate::global_config::global_config::GlobalConfig;
-use crate::resource_file::structs::resource_config::ResourceConfig;
-use crate::resource_file::structs::resource_file_property::ResourceFileProperty;
-use crate::resource_file::structs::resource_file_data::ResourceFileData;
-use crate::resource_file::impl_traits::impl_download::chunked_download::file::{computed_semaphore_count, get_local_file_size, open_file, GetLocalFileSizeError, OpenFileError};
-use crate::resource_file::impl_traits::impl_download::chunked_download::task::{build_download_tasks, join_all_and_handle_result, BuildDownloadTasksError, DownloadTaskArgs, JoinAllAndHandleResultError};
+use crate::remote_file::structs::remote_file_config::RemoteConfig;
+use crate::remote_file::structs::remote_file_property::RemoteFileProperty;
+use crate::remote_file::structs::remote_file_data::RemoteFileData;
+use crate::remote_file::impl_traits::impl_download::chunked_download::file::{computed_semaphore_count, get_local_file_size, open_file, GetLocalFileSizeError, OpenFileError};
+use crate::remote_file::impl_traits::impl_download::chunked_download::task::{build_download_tasks, join_all_and_handle_result, BuildDownloadTasksError, DownloadTaskArgs, JoinAllAndHandleResultError};
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -32,7 +32,7 @@ pub enum SetInitialProgressError {
 }
 
 pub fn set_initial_progress(
-    inner_state: &ResourceFileProperty,
+    inner_state: &RemoteFileProperty,
     start: u64,
 ) -> Result<(), SetInitialProgressError> {
     inner_state
@@ -48,12 +48,12 @@ pub fn set_initial_progress(
 }
 
 pub struct ChunkedDownloadArgs {
-    pub(crate) resource_file_data: Arc<ResourceFileData>,
+    pub(crate) remote_file_data: Arc<RemoteFileData>,
     pub(crate) http_client: Client,
     pub(crate) save_absolute_path: PathBuf,
     pub(crate) global_config: GlobalConfig,
-    pub(crate) inner_state: ResourceFileProperty,
-    pub(crate) inner_config: ResourceConfig,
+    pub(crate) inner_state: RemoteFileProperty,
+    pub(crate) inner_config: RemoteConfig,
 }
 
 #[derive(Debug, Error)]
@@ -83,9 +83,9 @@ pub enum ChunkedDownloadError {
 pub async fn chunked_download(
     args: ChunkedDownloadArgs,
 ) -> Result<(), ChunkedDownloadError> {
-    let total_size = args.resource_file_data.size.ok_or_else(|| {
+    let total_size = args.remote_file_data.size.ok_or_else(|| {
         ChunkedDownloadError::UnknownFileSize(
-            args.resource_file_data.absolute_path.clone(),
+            args.remote_file_data.absolute_path.clone(),
         )
     })?;
 
@@ -106,13 +106,13 @@ pub async fn chunked_download(
     let file = open_file(&args.save_absolute_path).await?;
 
     let thread_count =
-        computed_semaphore_count(args.resource_file_data.size); // 计算线程数
+        computed_semaphore_count(args.remote_file_data.size); // 计算线程数
 
     let semaphore = Arc::new(Semaphore::new(thread_count));
 
     let download_task_args = DownloadTaskArgs {
         http_client: &args.http_client,
-        file_url: &args.resource_file_data.absolute_path,
+        file_url: &args.remote_file_data.absolute_path,
         semaphore,
         start,
         total_size,
