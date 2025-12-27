@@ -32,13 +32,12 @@ async fn test_download() -> Result<(), String> {
 
     for vec_remote_files in data {
         for remote_file in vec_remote_files {
-            println!("获取到的文件列表：{:?}", remote_file);
-            // let _remotes_file_arc = remote_file
-            //     .download(
-            //         "C:\\project\\rust\\quick-sync\\temp-download-files\\",
-            //     )
-            //     .await
-            //     .map_err(|e| e.to_string())?;
+            let _remotes_file_arc = remote_file
+                .download(
+                    "C:\\project\\rust\\quick-sync\\temp-download-files\\",
+                )
+                .await
+                .map_err(|e| e.to_string())?;
         }
     }
     Ok(())
@@ -215,98 +214,105 @@ fn generates_2mb() {
     assert_eq!(s.len(), 255);
 }
 
-#[tokio::test]
-async fn test_reactive_data() -> Result<(), String> {
-    if let Some(stats) = memory_stats() {
-        let client = WebDavClient::new();
-        let webdav_account = load_account(WEBDAV_ENV_PATH_2);
+#[tokio::test(flavor = "current_thread")]
+async fn test_performance() -> Result<(), String> {
+    use std::sync::Arc;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use tokio::sync::Barrier;
+    use webdav_client::remote_file::structs::remote_file_property::RemoteFileProperty;
 
-        let key = client
-            .add_account(
-                &webdav_account.url,
-                &webdav_account.username,
-                &webdav_account.password,
-            )
-            .map_err(|e| e.to_string())?;
+    let watcher_count = std::env::var("QS_REACTIVE_WATCHERS")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(100_0000);
+    let update_count = std::env::var("QS_REACTIVE_UPDATES")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .unwrap_or(1_0000);
 
-        let data = client
-            .get_folders(&key, &vec!["./".to_string()], &Depth::One)
-            .await
-            .map_err(|e| e.to_string())?;
+    let state = RemoteFileProperty::new("reactive-bench".to_string());
+    let download_bytes = state.get_download_bytes().clone();
 
-        // 确保有文件可以测试
-        if data.is_empty() || data[0].is_empty() {
-            return Err("没有找到可测试的文件".to_string());
-        }
+    let barrier = Arc::new(Barrier::new(watcher_count + 1));
+    let ready = Arc::new(AtomicUsize::new(0));
 
-        let file = &data[0][0];
+    let mut handles = Vec::with_capacity(watcher_count);
+    for _ in 0..watcher_count {
+        let mut watcher = download_bytes.watch();
+        let barrier = barrier.clone();
+        let ready = ready.clone();
 
-        // 获取响应式名称属性
-        let name = file.get_reactive_name();
-        let initial_name = name.get_current().unwrap();
-        println!("初始名称: {}", initial_name);
+        handles.push(tokio::spawn(async move {
+            ready.fetch_add(1, Ordering::SeqCst);
+            barrier.wait().await;
 
-        // 使用 mpsc 通道替代 oneshot
-        let (tx, mut rx) = tokio::sync::mpsc::channel(100);
-
-        // 启动监听任务
-        for i in 0..30 {
-            let mut watch_clone = name.watch();
-            let tx_clone = tx.clone();
-
-            tokio::spawn(async move {
-                match watch_clone.changed().await {
-                    Ok(_new_value) => {
-                        // println!("监听器 {} 收到新名称: {}", i, new_value);
-                        let _ = tx_clone.send(i).await;
-                    }
-                    Err(e) => {
-                        println!("监听器 {} 错误: {}", i, e);
-                        let _ = tx_clone.send(i).await;
-                    }
+            let mut last = watcher.borrow().unwrap_or_default();
+            loop {
+                let v = watcher.changed().await.map_err(|e| e.to_string())?;
+                if v < last {
+                    return Err(format!(
+                        "download_bytes 非单调递增: {} -> {}",
+                        last, v
+                    ));
                 }
-            });
+                last = v;
+                if v >= update_count {
+                    break;
+                }
+            }
+            Ok::<(), String>(())
+        }));
+    }
+
+    while ready.load(Ordering::SeqCst) < watcher_count {
+        tokio::task::yield_now().await;
+    }
+
+    barrier.wait().await;
+
+    let start = Instant::now();
+    for v in 1..=update_count {
+        download_bytes
+            .update(v)
+            .map_err(|e| format!("更新失败: {e}"))?;
+
+        if v % 256 == 0 {
+            tokio::task::yield_now().await;
         }
+    }
+    let update_duration = start.elapsed();
 
-        // 等待一小段时间确保监听任务启动
-        tokio::time::sleep(Duration::from_millis(1000)).await;
-
-        let start = Instant::now();
-
-        // 更新名称以触发监听器
-        for _i in 0..1_000_000 {
-            let new_name = format!("{:?}", random_bytes_2mb());
-            name.update(new_name.clone())
-                .map_err(|e| format!("更新失败: {}", e))?;
-            // 验证名称是否更新
-            let current_name = name.get_current_borrow();
-            assert_eq!(
-                current_name.as_ref().unwrap(),
-                &new_name,
-                "名称更新失败"
-            );
-        }
-
-        let duration = start.elapsed();
-
-        // 等待监听任务完成（最多1秒）
-        tokio::time::timeout(Duration::from_secs(1), rx.recv())
+    for handle in handles {
+        let join = tokio::time::timeout(Duration::from_secs(10), handle)
             .await
-            .map_err(|_| "监听器超时".to_string())?
-            .ok_or("通道关闭".to_string())?;
+            .map_err(|_| "监听器等待超时".to_string())?;
+        join.map_err(|e| e.to_string())?
+            .map_err(|e| e.to_string())?;
+    }
 
-        println!(
-            "1_000_000 次 30 个监听对象名称，每个名称长度255字符，更新总耗时: {:.2?}",
-            duration
-        );
+    let total_duration = start.elapsed();
+    let updates_per_sec = (update_count as f64) / update_duration.as_secs_f64();
+
+    println!(
+        "ReactiveProperty响应式属性性能测试(flavor = \"current_thread\")\n 监听器数量={} 每个监听器更新次数={}\n 更新耗时={:.2?} ({:.0} 次修改/s)\n全量收敛耗时={:.2?}",
+        watcher_count,
+        update_count,
+        update_duration,
+        updates_per_sec,
+        total_duration
+    );
+
+    if let Some(stats) = memory_stats() {
         println!("物理内存使用: {} bytes", stats.physical_mem);
         println!("虚拟内存使用: {} bytes", stats.virtual_mem);
-
-        println!("测试成功完成");
-        Ok(())
-    } else {
-        Ok(())
     }
+
+    assert!(
+        total_duration < Duration::from_secs(10),
+        "响应式状态收敛过慢: {total_duration:.2?}"
+    );
+
+    Ok(())
 }
 
 /// 测试重复下载
@@ -375,7 +381,7 @@ async fn test_download_repeat() -> Result<(), String> {
     }
 
     // 检查是否有跳过的下载任务
-    // assert_eq!(existing_files, 4, "跳过4个文件，成功下载1个");
+    assert_eq!(existing_files, 4, "跳过4个文件，成功下载1个");
 
     Ok(())
 }
