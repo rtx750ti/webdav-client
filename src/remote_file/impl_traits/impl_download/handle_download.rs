@@ -10,6 +10,7 @@ use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;
 use thiserror::Error;
+use tokio::fs;
 
 #[derive(Debug, Error)]
 pub enum GetLargeFileThresholdError {
@@ -63,6 +64,9 @@ pub enum HandleDownloadError {
 
     #[error("跳过下载路径: {0} ，因为该文件或文件夹已存在")]
     PathExists(PathBuf),
+
+    #[error("创建文件夹失败 : {0}")]
+    CreateDirError(std::io::Error),
 }
 
 pub(crate) struct HandleDownloadArgs {
@@ -74,7 +78,22 @@ pub(crate) struct HandleDownloadArgs {
     pub(crate) inner_config: RemoteConfig,
 }
 
-pub(crate) async fn handle_download(
+async fn handle_dir(
+    args: HandleDownloadArgs,
+) -> Result<(), HandleDownloadError> {
+    // 判断它在不在本地
+    if !args.save_absolute_path.exists() {
+        // 创建文件夹
+        fs::create_dir(args.save_absolute_path)
+            .await
+            .map_err(|e| HandleDownloadError::CreateDirError(e))?;
+        Ok(())
+    } else {
+        Err(HandleDownloadError::PathExists(args.save_absolute_path))
+    }
+}
+
+async fn handle_file(
     args: HandleDownloadArgs,
 ) -> Result<(), HandleDownloadError> {
     // 首先判断本地文件中是否有该文件存在，如果有则不下载
@@ -117,4 +136,14 @@ pub(crate) async fn handle_download(
     chunked_download(chunked_download_args).await?;
 
     Ok(())
+}
+
+pub(crate) async fn handle_download(
+    args: HandleDownloadArgs,
+) -> Result<(), HandleDownloadError> {
+    if args.remote_file_data.is_dir {
+        handle_dir(args).await
+    } else {
+        handle_file(args).await
+    }
 }

@@ -5,10 +5,10 @@ pub(crate) mod not_chunked_download;
 use crate::remote_file::impl_traits::impl_download::handle_download::{
     HandleDownloadArgs, handle_download,
 };
-use crate::remote_file::structs::remote_file_data::RemoteFileData;
 use crate::remote_file::structs::remote_file::{
     LockFileError, RemoteFile, UnlockFileError,
 };
+use crate::remote_file::structs::remote_file_data::RemoteFileData;
 use crate::remote_file::traits::download::{Download, DownloadError};
 use async_trait::async_trait;
 use std::convert::Infallible;
@@ -16,6 +16,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::Arc;
 use thiserror::Error;
+use tokio::fs;
 
 #[derive(Debug, Error)]
 pub enum PreprocessingSavePathError {
@@ -24,18 +25,15 @@ pub enum PreprocessingSavePathError {
 }
 
 /// 预处理保存文件路径
-fn preprocessing_save_path(
+async fn preprocessing_save_path(
     remote_file_data: Arc<RemoteFileData>,
     save_absolute_path: &str,
 ) -> Result<PathBuf, PreprocessingSavePathError> {
     // 预处理保存文件的完整路径
     let path = PathBuf::from_str(save_absolute_path)?;
-
-    if remote_file_data.is_dir {
-        Ok(path)
-    } else {
-        Ok(path.join(&remote_file_data.name))
-    }
+    let joined_path = path.join(&remote_file_data.name);
+    println!("处理的地址：{:?}", joined_path);
+    Ok(joined_path)
 }
 
 #[derive(Debug, Error)]
@@ -66,7 +64,8 @@ impl Download for RemoteFile {
         handle_mounted().await?;
 
         let save_absolute_path =
-            preprocessing_save_path(self.get_data(), save_absolute_path)?;
+            preprocessing_save_path(self.get_data(), save_absolute_path)
+                .await?;
 
         let http_client = self.get_http_client();
 
