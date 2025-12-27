@@ -1,16 +1,15 @@
-use crate::{load_account, WEBDAV_ENV_PATH_2};
+use crate::{WEBDAV_ENV_PATH_2, load_account};
 use memory_stats::memory_stats;
-use rand::{thread_rng, RngCore};
-use webdav_client::remote_file::impl_traits::impl_download::handle_download::HandleDownloadError;
+use rand::{RngCore, thread_rng};
 use std::time::Duration;
 use tokio::time::Instant;
-use webdav_client::client::enums::depth::Depth;
-use webdav_client::client::traits::_self::account::Account;
-use webdav_client::client::traits::remote::folders::Folders;
 use webdav_client::client::WebDavClient;
-use webdav_client::remote_file::traits::download::{
-    Download, DownloadError,
-};
+use webdav_client::client::enums::Depth;
+use webdav_client::client::traits::client::Account;
+use webdav_client::client::traits::remote::Folders;
+use webdav_client::remote_file::impl_traits::handle_download::HandleDownloadError;
+use webdav_client::remote_file::structs::RemoteFileProperty;
+use webdav_client::remote_file::traits::download::{Download, DownloadError};
 
 #[tokio::test]
 async fn test_download() -> Result<(), String> {
@@ -219,7 +218,6 @@ async fn test_performance() -> Result<(), String> {
     use std::sync::Arc;
     use std::sync::atomic::{AtomicUsize, Ordering};
     use tokio::sync::Barrier;
-    use webdav_client::remote_file::structs::remote_file_property::RemoteFileProperty;
 
     let watcher_count = std::env::var("QS_REACTIVE_WATCHERS")
         .ok()
@@ -248,7 +246,8 @@ async fn test_performance() -> Result<(), String> {
 
             let mut last = watcher.borrow().unwrap_or_default();
             loop {
-                let v = watcher.changed().await.map_err(|e| e.to_string())?;
+                let v =
+                    watcher.changed().await.map_err(|e| e.to_string())?;
                 if v < last {
                     return Err(format!(
                         "download_bytes 非单调递增: {} -> {}",
@@ -272,9 +271,7 @@ async fn test_performance() -> Result<(), String> {
 
     let start = Instant::now();
     for v in 1..=update_count {
-        download_bytes
-            .update(v)
-            .map_err(|e| format!("更新失败: {e}"))?;
+        download_bytes.update(v).map_err(|e| format!("更新失败: {e}"))?;
 
         if v % 256 == 0 {
             tokio::task::yield_now().await;
@@ -286,12 +283,12 @@ async fn test_performance() -> Result<(), String> {
         let join = tokio::time::timeout(Duration::from_secs(10), handle)
             .await
             .map_err(|_| "监听器等待超时".to_string())?;
-        join.map_err(|e| e.to_string())?
-            .map_err(|e| e.to_string())?;
+        join.map_err(|e| e.to_string())?.map_err(|e| e.to_string())?;
     }
 
     let total_duration = start.elapsed();
-    let updates_per_sec = (update_count as f64) / update_duration.as_secs_f64();
+    let updates_per_sec =
+        (update_count as f64) / update_duration.as_secs_f64();
 
     println!(
         "ReactiveProperty响应式属性性能测试(flavor = \"current_thread\")\n 监听器数量={} 每个监听器更新次数={}\n 更新耗时={:.2?} ({:.0} 次修改/s)\n全量收敛耗时={:.2?}",

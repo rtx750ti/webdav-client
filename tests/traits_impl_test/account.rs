@@ -2,7 +2,7 @@ use crate::{WEBDAV_ENV_PATH_1, load_account};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::sleep;
-use webdav_client::client::traits::_self::account::{Account, AccountError};
+use webdav_client::client::traits::client::{Account, AccountError};
 use webdav_client::client::WebDavClient;
 
 #[tokio::test]

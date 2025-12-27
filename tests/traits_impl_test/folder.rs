@@ -1,8 +1,9 @@
-use webdav_client::client::enums::depth::Depth;
-use webdav_client::client::traits::_self::account::Account;
-use webdav_client::client::traits::remote::folders::{Folders, FoldersError, GetFoldersError};
-use crate::{load_account, WEBDAV_ENV_PATH_1};
+use webdav_client::client::enums::Depth;
+use webdav_client::client::traits::client::Account;
+use webdav_client::client::traits::remote::{Folders, FoldersError, GetFoldersError};
 use webdav_client::client::WebDavClient;
+use crate::{load_account, WEBDAV_ENV_PATH_1};
+
 
 #[tokio::test]
 async fn test_get_folders() -> Result<(), FoldersError> {
