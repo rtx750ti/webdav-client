@@ -1,20 +1,21 @@
+pub mod get_folders;
+pub mod webdav_request;
+
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::raw_file_xml::MultiStatus;
-use crate::client::traits::account::Account;
-use crate::client::traits::folders::{
-    Folders, TRemoteFileCollectionList,
-};
+
 use crate::client::{THttpClientArc, WebDavClient};
 use crate::global_config::global_config::GlobalConfig;
-use crate::client::webdav_request::get_folders_public_impl::{
-    get_folders_with_client, GetFoldersError,
-};
+
+use crate::client::enums::depth::Depth;
+use crate::client::impl_traits::impl_folders::webdav_request::get_folders_with_client;
+use crate::client::traits::_self::account::Account;
+use crate::client::traits::_self::url_format::UrlFormat;
 use crate::remote_file::traits::to_remote_file_data::ToRemoteFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;
 use reqwest::Url;
-use crate::client::enums::depth::Depth;
-use crate::client::traits::url_format::UrlFormat;
+use crate::client::traits::remote::folders::{Folders, GetFoldersError, TRemoteFileCollectionList};
 
 #[derive(Debug)]
 pub struct HandleResultArgs {
@@ -37,12 +38,10 @@ pub fn handle_result(
                     multi_status.to_remote_file_data(&arg.base_url)?;
 
                 for remote_file_data in remote_file_data_list {
-                    remote_files.push(
-                        remote_file_data.to_remote_file(
-                            arg.http_client_arc.get_client(),
-                            arg.global_config.clone(),
-                        ),
-                    )
+                    remote_files.push(remote_file_data.to_remote_file(
+                        arg.http_client_arc.get_client(),
+                        arg.global_config.clone(),
+                    ))
                 }
                 all_files.push(remote_files)
             }

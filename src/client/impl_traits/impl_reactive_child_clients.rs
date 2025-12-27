@@ -1,11 +1,12 @@
 use crate::client::structs::client_key::ClientKey;
 use crate::client::structs::client_value::HttpClient;
 use crate::client::structs::reactive_child_clients::ReactiveChildClients;
-use crate::client::traits::account::{
+
+use crate::client::THttpClientArc;
+use crate::client::traits::_self::account::{
     Account, AccountError, AddAccountError, GetHttpClientError,
     RemoveAccountError, RemoveAccountForceError,
 };
-use crate::client::THttpClientArc;
 use std::sync::Arc;
 
 impl Account for ReactiveChildClients {

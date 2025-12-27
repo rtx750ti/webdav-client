@@ -1,3 +1,3 @@
-pub mod folders;
-pub mod account;
-pub mod url_format;
+pub mod _self;
+pub mod remote;
+pub mod local;

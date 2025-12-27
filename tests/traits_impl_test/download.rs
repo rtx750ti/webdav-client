@@ -5,8 +5,8 @@ use webdav_client::remote_file::impl_traits::impl_download::handle_download::Han
 use std::time::Duration;
 use tokio::time::Instant;
 use webdav_client::client::enums::depth::Depth;
-use webdav_client::client::traits::account::Account;
-use webdav_client::client::traits::folders::Folders;
+use webdav_client::client::traits::_self::account::Account;
+use webdav_client::client::traits::remote::folders::Folders;
 use webdav_client::client::WebDavClient;
 use webdav_client::remote_file::traits::download::{
     Download, DownloadError,

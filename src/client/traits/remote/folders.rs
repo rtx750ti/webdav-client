@@ -1,8 +1,37 @@
 use crate::client::enums::depth::Depth;
 use crate::client::structs::client_key::ClientKey;
-use crate::client::webdav_request::get_folders_public_impl::GetFoldersError;
+use crate::client::traits::_self::account::AccountError;
+use crate::client::traits::_self::url_format::UrlFormatError;
 use crate::remote_file::structs::remote_file::RemoteFile;
+use crate::remote_file::traits::to_remote_file_data::ToRemoteFileDataError;
 use async_trait::async_trait;
+
+#[derive(Debug, thiserror::Error)]
+pub enum GetFoldersError {
+    #[error("HTTP 请求失败->{0}")]
+    Http(#[from] reqwest::Error),
+
+    #[error("XML 解析失败->{0}")]
+    XmlParse(#[from] quick_xml::DeError),
+
+    #[error("状态解析错误->{0}")]
+    StatusParseError(String),
+
+    #[error("资源文件出错->{0}")]
+    ToRemoteFileDataError(#[from] ToRemoteFileDataError),
+
+    #[error("URL 格式错误->{0}")]
+    FormatUrlError(String),
+
+    #[error("账号出错->{0}")]
+    AccountError(#[from] AccountError),
+
+    #[error("转换HeadMethod失败->{0}")]
+    ToHeadMethodError(String),
+
+    #[error("解析URL地址错误->{0}")]
+    UrlFormatError(#[from] UrlFormatError),
+}
 
 #[derive(Debug, thiserror::Error)]
 pub enum FoldersError {

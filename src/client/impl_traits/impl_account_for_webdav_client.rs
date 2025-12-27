@@ -1,6 +1,6 @@
 use crate::client::structs::client_key::ClientKey;
-use crate::client::traits::account::{Account, AccountError};
 use crate::client::{THttpClientArc, WebDavClient};
+use crate::client::traits::_self::account::{Account, AccountError};
 
 impl Account for WebDavClient {
     fn add_account(

@@ -4,7 +4,7 @@ use reqwest::header::{AUTHORIZATION, HeaderMap, HeaderValue};
 use reqwest::{Client, Url};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
-use crate::client::format_base_url::format_base_url;
+use crate::client::public::format_base_url::format_base_url;
 use std::fmt;
 
 pub fn encrypt_str(data: &str) -> String {
