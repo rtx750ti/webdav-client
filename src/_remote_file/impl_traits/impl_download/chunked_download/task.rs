@@ -1,4 +1,4 @@
-use crate::global_config::global_config::GlobalConfig;
+use crate::_global_config::global_config::GlobalConfig;
 use crate::_remote_file::structs::remote_file_config::RemoteConfig;
 use crate::_remote_file::structs::remote_file_property::RemoteFileProperty;
 use crate::_remote_file::impl_traits::impl_download::chunked_download::file::{clone_file_handle, CloneFileHandleError};

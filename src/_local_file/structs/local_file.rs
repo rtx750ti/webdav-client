@@ -1,8 +1,9 @@
-use crate::global_config::global_config::GlobalConfig;
+use crate::_global_config::global_config::GlobalConfig;
 use crate::_local_file::structs::local_file_config::LocalFileConfig;
 use crate::_local_file::structs::local_file_data::LocalFileData;
 use crate::_local_file::structs::local_file_property::LocalFileProperty;
 use reqwest::Client;
+use std::fmt;
 use std::sync::Arc;
 
 pub struct LocalFile {
@@ -11,6 +12,21 @@ pub struct LocalFile {
     reactive_state: LocalFileProperty,
     reactive_config: LocalFileConfig,
     global_config: GlobalConfig,
+}
+
+impl fmt::Debug for LocalFile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LocalFile")
+            .field(
+                "http_client",
+                &"<HttpClient with hidden authorization>",
+            )
+            .field("data", &self.data)
+            .field("reactive_state", &self.reactive_state)
+            .field("reactive_config", &self.reactive_config)
+            .field("global_config", &self.global_config)
+            .finish()
+    }
 }
 
 impl LocalFile {

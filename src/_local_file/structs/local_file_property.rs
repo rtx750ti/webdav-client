@@ -1,5 +1,6 @@
-use crate::reactive::reactive::ReactiveProperty;
+use crate::_reactive::reactive::ReactiveProperty;
 
+#[derive(Debug)]
 pub struct LocalFileProperty {
     pub file_lock: ReactiveProperty<bool>,
     pub upload_bytes: ReactiveProperty<usize>,

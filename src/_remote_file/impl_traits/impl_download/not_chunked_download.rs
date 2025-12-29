@@ -1,5 +1,5 @@
-use crate::global_config::global_config::GlobalConfig;
-use crate::reactive::reactive::ReactivePropertyError;
+use crate::_global_config::global_config::GlobalConfig;
+use crate::_reactive::reactive::ReactivePropertyError;
 use futures_util::StreamExt;
 use reqwest::Client;
 use std::path::PathBuf;

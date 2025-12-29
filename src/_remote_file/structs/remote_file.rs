@@ -1,7 +1,7 @@
 use std::fmt;
 use crate::_client::structs::client_key::TClientKey;
-use crate::global_config::global_config::GlobalConfig;
-use crate::reactive::reactive::ReactivePropertyError;
+use crate::_global_config::global_config::GlobalConfig;
+use crate::_reactive::reactive::ReactivePropertyError;
 use reqwest::Client;
 use std::ops::Deref;
 use std::sync::Arc;

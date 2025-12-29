@@ -1,4 +1,4 @@
-use crate::reactive::reactive::ReactiveProperty;
+use crate::_reactive::reactive::ReactiveProperty;
 use std::ops::Deref;
 
 #[derive(Debug, Clone)]

@@ -5,7 +5,7 @@ use reqwest::{Client, Url};
 use sha2::{Digest, Sha256};
 use std::sync::Arc;
 use std::fmt;
-use crate::client::public::format_webdav_base_url::format_base_url;
+use crate::client::public::format_base_url;
 
 pub fn encrypt_str(data: &str) -> String {
     let mut hasher = Sha256::new();
@@ -24,7 +24,7 @@ pub struct HttpClient {
 impl fmt::Debug for HttpClient {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("HttpClient")
-            .field("_client", &"<Client with hidden authorization>")
+            .field("client", &"<Client with hidden authorization>")
             .field("base_url", &self.base_url)
             .field("encrypted_username", &self.encrypted_username)
             .field("encrypted_password", &self.encrypted_password)

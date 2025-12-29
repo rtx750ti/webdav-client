@@ -1,13 +1,31 @@
 use std::ffi::OsString;
+use std::fmt;
+use std::fmt::Formatter;
 use std::fs::Metadata;
 use std::path::PathBuf;
 use tokio::fs::metadata;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct LocalFileData {
     pub path: PathBuf, // 本地完整路径
     pub file_name: OsString,
     pub is_dir: bool,
+}
+
+impl fmt::Debug for LocalFileData {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let display_path = self
+            .path
+            .strip_prefix(dirs::home_dir().unwrap_or_default())
+            .map(|p| format!("~/{}", p.display()))
+            .unwrap_or_else(|_| "<path error>".to_string());
+
+        f.debug_struct("LocalFile")
+            .field("path", &display_path)
+            .field("file_name", &self.file_name)
+            .field("is_dir", &self.is_dir)
+            .finish()
+    }
 }
 
 impl LocalFileData {

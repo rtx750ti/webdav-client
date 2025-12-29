@@ -3,7 +3,7 @@ pub(crate) mod file;
 pub(crate) mod http_stream;
 pub(crate) mod task;
 
-use crate::global_config::global_config::GlobalConfig;
+use crate::_global_config::global_config::GlobalConfig;
 use reqwest::Client;
 use std::path::PathBuf;
 use std::sync::Arc;

@@ -1,4 +1,4 @@
-use crate::global_config::global_config::GlobalConfig;
+use crate::_global_config::global_config::GlobalConfig;
 use crate::remote_file::impl_traits::chunked_download::black_list::is_chunked_download_blacklisted;
 use crate::remote_file::impl_traits::chunked_download::{
     ChunkedDownloadArgs, ChunkedDownloadError, chunked_download,

@@ -1,5 +1,5 @@
-use crate::global_config::global_config::GlobalConfig;
-use crate::reactive::reactive::ReactivePropertyError;
+use crate::_global_config::global_config::GlobalConfig;
+use crate::_reactive::reactive::ReactivePropertyError;
 use crate::_remote_file::structs::remote_file_config::RemoteConfig;
 use crate::_remote_file::structs::remote_file_property::RemoteFileProperty;
 use bytes::Bytes;

@@ -1,4 +1,4 @@
-use crate::reactive::reactive::{ReactiveProperty, ReactivePropertyError};
+use crate::_reactive::reactive::{ReactiveProperty, ReactivePropertyError};
 use std::ops::Deref;
 use thiserror::Error;
 

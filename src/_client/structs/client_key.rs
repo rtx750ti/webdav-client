@@ -1,4 +1,4 @@
-use crate::client::public::format_webdav_base_url::format_base_url;
+use crate::client::public::format_base_url;
 use reqwest::Url;
 use std::sync::Arc;
 

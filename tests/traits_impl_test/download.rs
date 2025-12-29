@@ -228,7 +228,7 @@ async fn test_performance() -> Result<(), String> {
         .and_then(|v| v.parse::<usize>().ok())
         .unwrap_or(1_0000);
 
-    let state = RemoteFileProperty::new("reactive-bench".to_string());
+    let state = RemoteFileProperty::new("_reactive-bench".to_string());
     let download_bytes = state.get_download_bytes().clone();
 
     let barrier = Arc::new(Barrier::new(watcher_count + 1));

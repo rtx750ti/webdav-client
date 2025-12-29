@@ -11,7 +11,7 @@
 //!
 //! ## 使用示例
 //! ```rust
-//! use crate::reactive::reactive::ReactiveProperty;
+//! use crate::_reactive::_reactive::ReactiveProperty;
 //!
 //! #[tokio::main]
 //! async fn main() {
@@ -75,7 +75,7 @@ where
     ///
     /// # 示例
     /// ```
-    /// use crate::reactive::reactive::ReactiveProperty;
+    /// use crate::_reactive::_reactive::ReactiveProperty;
     ///
     /// let prop = ReactiveProperty::new("Hello".to_string());
     /// assert_eq!(prop.get_current().unwrap().as_str(), "Hello");
@@ -105,7 +105,7 @@ where
     ///
     /// # 示例
     /// ```
-    /// use crate::reactive::reactive::ReactiveProperty;
+    /// use crate::_reactive::_reactive::ReactiveProperty;
     ///
     /// let prop = ReactiveProperty::new(10);
     /// prop.update(20).unwrap();
@@ -137,7 +137,7 @@ where
     ///
     /// # 示例
     /// ```
-    /// use crate::reactive::reactive::ReactiveProperty;
+    /// use crate::_reactive::_reactive::ReactiveProperty;
     ///
     /// #[tokio::main]
     /// async fn main() {
@@ -197,7 +197,7 @@ where
     ///
     /// # 示例
     /// ```
-    /// use crate::reactive::reactive::ReactiveProperty;
+    /// use crate::_reactive::_reactive::ReactiveProperty;
     ///
     /// #[derive(Clone)]
     /// struct State {

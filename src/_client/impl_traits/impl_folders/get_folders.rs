@@ -5,7 +5,7 @@ use crate::client::traits::remote::{
     Folders, GetFoldersError, TRemoteFileCollectionList,
 };
 use crate::client::{THttpClientArc, WebDavClient};
-use crate::global_config::global_config::GlobalConfig;
+use crate::_global_config::global_config::GlobalConfig;
 use crate::remote_file::traits::to_remote_file_data::ToRemoteFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;

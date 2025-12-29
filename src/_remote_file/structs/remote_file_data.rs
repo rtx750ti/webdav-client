@@ -1,4 +1,4 @@
-use crate::global_config::global_config::GlobalConfig;
+use crate::_global_config::global_config::GlobalConfig;
 use chrono::{DateTime, FixedOffset};
 use reqwest::{Client, Url};
 use crate::remote_file::structs::RemoteFile;
