@@ -9,7 +9,9 @@ use webdav_client::client::traits::client::Account;
 use webdav_client::client::traits::remote::Folders;
 use webdav_client::remote_file::impl_traits::handle_download::HandleDownloadError;
 use webdav_client::remote_file::structs::RemoteFileProperty;
-use webdav_client::remote_file::traits::download::{Download, DownloadError};
+use webdav_client::remote_file::traits::download::{
+    Download, DownloadError,
+};
 
 #[tokio::test]
 async fn test_download() -> Result<(), String> {
@@ -25,13 +27,15 @@ async fn test_download() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let data = client
-        .get_folders(&key, &vec!["./测试文件夹".to_string()], &Depth::One)
+        .get_folders(&key, &["./测试文件夹"], &Depth::One)
         .await
         .map_err(|e| e.to_string())?;
 
-    for vec_remote_files in data {
-        for remote_file in vec_remote_files {
-            let _remotes_file_arc = remote_file
+    for (from_path, remote_files) in data {
+        println!("来自路径: {}", from_path);
+
+        for remote_file in remote_files {
+            remote_file
                 .download(
                     "C:\\project\\rust\\quick-sync\\temp-download-files\\",
                 )
@@ -58,14 +62,16 @@ async fn test_download_progress_monitoring() -> Result<(), String> {
     let data = client
         .get_folders(
             &key,
-            &vec!["./测试文件夹/新建文件夹/hula.exe".to_string()],
+            &["./测试文件夹/新建文件夹/hula.exe"],
             &Depth::One,
         )
         .await
         .map_err(|e| e.to_string())?;
 
-    for vec_remote_files in data {
-        for remote_file in vec_remote_files {
+    for (from_path, remote_files) in data {
+        println!("来自路径: {}", from_path);
+
+        for remote_file in remote_files {
             // 假设这里有你现成的获取方法：请替换为你代码里真实存在的方法名
             let state = remote_file.get_reactive_state();
 
@@ -121,7 +127,7 @@ async fn test_download_pause() -> Result<(), String> {
     let data = client
         .get_folders(
             &key,
-            &vec!["./测试文件夹/新建文件夹/hula.exe".to_string()],
+            &["./测试文件夹/新建文件夹/hula.exe"],
             &Depth::One,
         )
         .await
@@ -142,8 +148,10 @@ async fn test_download_pause() -> Result<(), String> {
         global_config.try_resume().unwrap();
     });
 
-    for vec_remote_files in data {
-        for remote_file in vec_remote_files {
+    for (from_path, remote_files) in data {
+        println!("来自路径: {}", from_path);
+
+        for remote_file in remote_files {
             // 假设这里有你现成的获取方法：请替换为你代码里真实存在的方法名
             let state = remote_file.get_reactive_state();
 
@@ -329,12 +337,12 @@ async fn test_download_repeat() -> Result<(), String> {
     let data = client
         .get_folders(
             &key,
-            &vec![
-                "./测试文件夹/新建 文本文档.txt".to_string(),
-                "./测试文件夹/新建 文本文档.txt".to_string(),
-                "./测试文件夹/新建 文本文档.txt".to_string(),
-                "./测试文件夹/新建 文本文档.txt".to_string(),
-                "./测试文件夹/新建 文本文档.txt".to_string(),
+            &[
+                "./测试文件夹/新建 文本文档.txt",
+                "./测试文件夹/新建 文本文档.txt",
+                "./测试文件夹/新建 文本文档.txt",
+                "./测试文件夹/新建 文本文档.txt",
+                "./测试文件夹/新建 文本文档.txt",
             ],
             &Depth::One,
         )
@@ -347,8 +355,10 @@ async fn test_download_repeat() -> Result<(), String> {
     // 记录失败的次数
     let mut existing_files = 0;
 
-    for vec_remote_files in data {
-        for remote_file in vec_remote_files {
+    for (from_path, remote_files) in data {
+        println!("来自路径: {}", from_path);
+
+        for remote_file in remote_files {
             let handle = tokio::spawn(async move {
                 let res = remote_file
                     .download("C:\\project\\rust\\quick-sync\\temp-download-files\\")

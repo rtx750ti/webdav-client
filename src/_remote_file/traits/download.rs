@@ -81,7 +81,7 @@ pub trait Download {
     ///
     /// ️ 若需要递归请自行实现，实现请参考WebdavClient中的get_folders方法⚠️。
     async fn download(
-        self,
+        &self,
         output_absolute_path: &str,
-    ) -> Result<Arc<Self>, DownloadError>;
+    ) -> Result<(), DownloadError>;
 }

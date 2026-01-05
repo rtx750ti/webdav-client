@@ -1,52 +1,65 @@
+use crate::_client::impl_traits::impl_folders::webdav_request::get_folders_raw_data;
+use crate::_global_config::global_config::GlobalConfig;
 use crate::client::enums::Depth;
 use crate::client::structs::{ClientKey, MultiStatus};
-use crate::client::traits::client::{Account, UrlFormat};
+use crate::client::traits::client::{Account, UrlFormat, UrlFormatError};
 use crate::client::traits::remote::{
-    Folders, GetFoldersError, TRemoteFileCollectionList,
+    Folders, GetFoldersError, RemoteFileCollections, RemoteFiles,
 };
 use crate::client::{THttpClientArc, WebDavClient};
-use crate::_global_config::global_config::GlobalConfig;
 use crate::remote_file::traits::to_remote_file_data::ToRemoteFileData;
 use async_trait::async_trait;
 use futures_util::future::join_all;
 use reqwest::Url;
-use crate::_client::impl_traits::impl_folders::webdav_request::get_folders_with_client;
 
 #[derive(Debug)]
-pub struct HandleResultArgs {
-    pub(crate) results: Vec<Result<MultiStatus, GetFoldersError>>,
-    pub(crate) http_client_arc: THttpClientArc,
-    pub(crate) base_url: Url,
-    pub(crate) global_config: GlobalConfig,
+struct WebdavFolderTaskResult {
+    path: String,
+    result: MultiStatus,
 }
 
-pub fn handle_result(
+type WebDavTaskResult =
+    Vec<Result<WebdavFolderTaskResult, GetFoldersError>>;
+
+#[derive(Debug)]
+struct HandleResultArgs {
+    results: WebDavTaskResult,
+    http_client_arc: THttpClientArc,
+    base_url: Url,
+    global_config: GlobalConfig,
+}
+
+fn handle_result(
     arg: HandleResultArgs,
-) -> Result<TRemoteFileCollectionList, GetFoldersError> {
-    let mut all_files = Vec::new();
+) -> Result<RemoteFileCollections, GetFoldersError> {
+    let mut remote_file_collections = RemoteFileCollections::new();
 
     for res in arg.results {
         match res {
-            Ok(multi_status) => {
-                let mut remote_files = Vec::new();
-                let remote_file_data_list =
-                    multi_status.to_remote_file_data(&arg.base_url)?;
+            Ok(webdav_folder_task_result) => {
+                let mut remote_files = RemoteFiles::new();
+                let remote_file_data_list = webdav_folder_task_result
+                    .result
+                    .to_remote_file_data(&arg.base_url)?;
 
                 for remote_file_data in remote_file_data_list {
-                    remote_files.push(remote_file_data.to_remote_file(
+                    let remote_file = remote_file_data.to_remote_file(
                         arg.http_client_arc.get_client(),
                         arg.global_config.clone(),
-                    ))
+                    );
+                    remote_files.push(remote_file);
                 }
-                all_files.push(remote_files)
+
+                remote_file_collections
+                    .insert(webdav_folder_task_result.path, remote_files);
             }
-            Err(e) => {
-                eprintln!("{}", e);
+            Err(url_format_error) => {
+                eprintln!("{}", url_format_error);
             }
         }
     }
 
-    Ok(all_files)
+    Ok(remote_file_collections)
 }
 
 #[async_trait]
@@ -54,9 +67,9 @@ impl Folders for WebDavClient {
     async fn get_folders(
         &self,
         key: &ClientKey,
-        paths: &Vec<String>,
+        paths: &[&str],
         depth: &Depth,
-    ) -> Result<TRemoteFileCollectionList, GetFoldersError> {
+    ) -> Result<RemoteFileCollections, GetFoldersError> {
         let http_client_arc = self.get_http_client(key)?;
 
         // 构建所有任务（这里只做并发请求）
@@ -66,15 +79,20 @@ impl Folders for WebDavClient {
             async move {
                 let url = self.format_url_path(key, path)?;
 
-                // 调用已有的单次请求函数
-                get_folders_with_client(http_client_entity, &url, depth)
-                    .await
+                // 获取webdav文件夹原始数据
+                let folders_raw_data =
+                    get_folders_raw_data(http_client_entity, &url, depth)
+                        .await?;
+
+                Ok(WebdavFolderTaskResult {
+                    path: path.to_string(),
+                    result: folders_raw_data,
+                })
             }
         });
 
         // 并发执行所有任务
-        let results: Vec<Result<MultiStatus, GetFoldersError>> =
-            join_all(tasks).await;
+        let results: WebDavTaskResult = join_all(tasks).await;
 
         let handle_result_args = HandleResultArgs {
             results,

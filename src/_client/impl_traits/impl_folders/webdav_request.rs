@@ -10,7 +10,7 @@ const PROPFIND_BODY: &str = r#"<?xml version="1.0" encoding="utf-8" ?>
   <D:allprop/>
 </D:propfind>"#;
 
-pub(crate) async fn get_folders_with_client(
+pub(crate) async fn get_folders_raw_data(
     http_client: Client,
     absolute_url: &str,
     depth: &Depth,

@@ -49,9 +49,9 @@ pub enum HandleUnmountedError {
 #[async_trait]
 impl Download for RemoteFile {
     async fn download(
-        self,
+        &self,
         save_absolute_path: &str,
-    ) -> Result<Arc<Self>, DownloadError> {
+    ) -> Result<(), DownloadError> {
         let handle_mounted = async || -> Result<(), LockFileError> {
             // 获取资源文件锁
             self.lock_file(false).await?; // 这里可能获取失败，如果获取失败就不下载，交给使用者来处理是否继续
@@ -91,6 +91,6 @@ impl Download for RemoteFile {
         // 处理可能的失败结果
         download_result?;
 
-        Ok(Arc::new(self))
+        Ok(())
     }
 }
