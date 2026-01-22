@@ -29,21 +29,32 @@ impl fmt::Debug for LocalFileData {
 }
 
 impl LocalFileData {
-    pub fn new(local_path: &str) -> Result<Self, String> {
-        let local_path = PathBuf::from(local_path);
+    pub fn new(local_path_str: &str) -> Result<Self, String> {
+        let local_path_result =
+            PathBuf::try_from(local_path_str).map_err(|e| e.to_string());
 
-        if !local_path.exists() {
-            return Err("该路径不存在".to_string());
+        match local_path_result {
+            Ok(local_path) => {
+                if !local_path.exists() {
+                    return Err(format!(
+                        r#"路径"{}"不存在"#,
+                        local_path.to_string_lossy()
+                    ));
+                }
+                let is_dir = local_path.is_dir();
+
+                let file_name = local_path
+                    .file_name()
+                    .map(|p| p.to_owned())
+                    .unwrap_or_else(|| OsString::new());
+
+                Ok(Self { path: local_path, is_dir, file_name })
+            }
+            Err(error) => Err(format!(
+                r#"路径"{}"解析失败:{}"#,
+                local_path_str, error
+            )),
         }
-
-        let is_dir = local_path.is_dir();
-
-        let file_name = local_path
-            .file_name()
-            .map(|p| p.to_owned())
-            .unwrap_or_else(|| OsString::new());
-
-        Ok(Self { path: local_path, is_dir, file_name })
     }
 
     pub async fn get_meta_data(&self) -> Result<Option<Metadata>, String> {

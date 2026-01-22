@@ -1,6 +1,6 @@
 use crate::client::enums::{Depth, WebDavMethod};
 use crate::client::structs::MultiStatus;
-use crate::client::traits::remote::GetFoldersError;
+use crate::client::traits::remote::GetRemoteFoldersError;
 use quick_xml::de::from_str;
 use reqwest::Client;
 use reqwest::header::{CONTENT_TYPE, HeaderMap, HeaderValue};
@@ -14,7 +14,7 @@ pub(crate) async fn get_folders_raw_data(
     http_client: Client,
     absolute_url: &str,
     depth: &Depth,
-) -> Result<MultiStatus, GetFoldersError> {
+) -> Result<MultiStatus, GetRemoteFoldersError> {
     // 组装请求头
     let mut headers = HeaderMap::new();
     headers
@@ -24,7 +24,7 @@ pub(crate) async fn get_folders_raw_data(
 
     let method = WebDavMethod::PROPFIND
         .to_head_method()
-        .map_err(|e| GetFoldersError::ToHeadMethodError(e))?;
+        .map_err(|e| GetRemoteFoldersError::ToHeadMethodError(e))?;
 
     // 发送 PROPFIND 到基准目录（已保证有尾部斜杠）
     let res = http_client
@@ -39,7 +39,7 @@ pub(crate) async fn get_folders_raw_data(
     let xml_text = res.text().await?;
 
     if !status.is_success() && status.as_u16() != 207 {
-        return Err(GetFoldersError::StatusParseError(format!(
+        return Err(GetRemoteFoldersError::StatusParseError(format!(
             "状态解析异常 {status}: {xml}",
             status = status,
             xml = xml_text

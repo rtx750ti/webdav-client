@@ -2,12 +2,10 @@ use crate::{WEBDAV_ENV_PATH_1, load_account};
 use webdav_client::client::WebDavClient;
 use webdav_client::client::enums::Depth;
 use webdav_client::client::traits::client::Account;
-use webdav_client::client::traits::remote::{
-    Folders, FoldersError, GetFoldersError,
-};
+use webdav_client::client::traits::remote::{RemoteFolders, GetRemoteFoldersError};
 
 #[tokio::test]
-async fn test_get_folders() -> Result<(), FoldersError> {
+async fn test_get_remote_folders() -> Result<(), GetRemoteFoldersError> {
     let client = WebDavClient::new();
     let webdav_account = load_account(WEBDAV_ENV_PATH_1);
 
@@ -17,11 +15,9 @@ async fn test_get_folders() -> Result<(), FoldersError> {
             &webdav_account.username,
             &webdav_account.password,
         )
-        .map_err(|e| {
-            FoldersError::GetFoldersError(GetFoldersError::AccountError(e))
-        })?;
+        .map_err(|e| GetRemoteFoldersError::AccountError(e))?;
 
-    let data = client.get_folders(&key, &["./"], &Depth::One).await?;
+    let data = client.get_remote_folders(&key, &["./"], &Depth::One).await?;
 
     println!("获取的结果：{:?}", data);
 

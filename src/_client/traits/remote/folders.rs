@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::ops::{Deref, DerefMut};
 
 #[derive(Debug, thiserror::Error)]
-pub enum GetFoldersError {
+pub enum GetRemoteFoldersError {
     #[error("HTTP 请求失败->{0}")]
     Http(#[from] reqwest::Error),
 
@@ -32,12 +32,6 @@ pub enum GetFoldersError {
 
     #[error("解析URL地址错误->{0}")]
     UrlFormatError(#[from] UrlFormatError),
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum FoldersError {
-    #[error("[get_folders] 获取文件夹函数出错->{0}")]
-    GetFoldersError(#[from] GetFoldersError),
 }
 
 #[derive(Debug, Clone)]
@@ -113,11 +107,11 @@ impl DerefMut for RemoteFileCollections {
 }
 
 #[async_trait]
-pub trait Folders {
-    async fn get_folders(
+pub trait RemoteFolders {
+    async fn get_remote_folders(
         &self,
         key: &ClientKey,
         paths: &[&str],
         depth: &Depth,
-    ) -> Result<RemoteFileCollections, GetFoldersError>;
+    ) -> Result<RemoteFileCollections, GetRemoteFoldersError>;
 }

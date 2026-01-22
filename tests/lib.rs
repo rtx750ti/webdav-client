@@ -1,5 +1,7 @@
 #[cfg(test)]
 pub mod traits_impl_test;
+mod test_local;
+
 #[cfg(test)]
 use dotenvy::from_filename_override;
 #[cfg(test)]

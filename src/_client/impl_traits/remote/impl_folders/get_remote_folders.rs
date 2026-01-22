@@ -1,10 +1,10 @@
-use crate::_client::impl_traits::impl_folders::webdav_request::get_folders_raw_data;
+use crate::_client::impl_traits::remote::impl_folders::webdav_request::get_folders_raw_data;
 use crate::_global_config::global_config::GlobalConfig;
 use crate::client::enums::Depth;
 use crate::client::structs::{ClientKey, MultiStatus};
 use crate::client::traits::client::{Account, UrlFormat, UrlFormatError};
 use crate::client::traits::remote::{
-    Folders, GetFoldersError, RemoteFileCollections, RemoteFiles,
+    RemoteFolders, GetRemoteFoldersError, RemoteFileCollections, RemoteFiles,
 };
 use crate::client::{THttpClientArc, WebDavClient};
 use crate::remote_file::traits::to_remote_file_data::ToRemoteFileData;
@@ -19,7 +19,7 @@ struct WebdavFolderTaskResult {
 }
 
 type WebDavTaskResult =
-    Vec<Result<WebdavFolderTaskResult, GetFoldersError>>;
+    Vec<Result<WebdavFolderTaskResult, GetRemoteFoldersError>>;
 
 #[derive(Debug)]
 struct HandleResultArgs {
@@ -31,7 +31,7 @@ struct HandleResultArgs {
 
 fn handle_result(
     arg: HandleResultArgs,
-) -> Result<RemoteFileCollections, GetFoldersError> {
+) -> Result<RemoteFileCollections, GetRemoteFoldersError> {
     let mut remote_file_collections = RemoteFileCollections::new();
 
     for res in arg.results {
@@ -63,13 +63,13 @@ fn handle_result(
 }
 
 #[async_trait]
-impl Folders for WebDavClient {
-    async fn get_folders(
+impl RemoteFolders for WebDavClient {
+    async fn get_remote_folders(
         &self,
         key: &ClientKey,
         paths: &[&str],
         depth: &Depth,
-    ) -> Result<RemoteFileCollections, GetFoldersError> {
+    ) -> Result<RemoteFileCollections, GetRemoteFoldersError> {
         let http_client_arc = self.get_http_client(key)?;
 
         // 构建所有任务（这里只做并发请求）

@@ -152,6 +152,10 @@ pub mod local_file {
         pub mod upload {
             pub use crate::_local_file::traits::upload::*;
         }
+        
+        pub mod update {
+            pub use crate::_local_file::traits::update::*;
+        }
     }
 
     /// 本地文件相关结构体。

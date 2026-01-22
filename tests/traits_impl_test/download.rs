@@ -6,7 +6,7 @@ use tokio::time::Instant;
 use webdav_client::client::WebDavClient;
 use webdav_client::client::enums::Depth;
 use webdav_client::client::traits::client::Account;
-use webdav_client::client::traits::remote::Folders;
+use webdav_client::client::traits::remote::RemoteFolders;
 use webdav_client::remote_file::impl_traits::handle_download::HandleDownloadError;
 use webdav_client::remote_file::structs::RemoteFileProperty;
 use webdav_client::remote_file::traits::download::{
@@ -27,7 +27,7 @@ async fn test_download() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let data = client
-        .get_folders(&key, &["./测试文件夹"], &Depth::One)
+        .get_remote_folders(&key, &["./测试文件夹"], &Depth::One)
         .await
         .map_err(|e| e.to_string())?;
 
@@ -60,7 +60,7 @@ async fn test_download_progress_monitoring() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let data = client
-        .get_folders(
+        .get_remote_folders(
             &key,
             &["./测试文件夹/新建文件夹/hula.exe"],
             &Depth::One,
@@ -125,7 +125,7 @@ async fn test_download_pause() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let data = client
-        .get_folders(
+        .get_remote_folders(
             &key,
             &["./测试文件夹/新建文件夹/hula.exe"],
             &Depth::One,
@@ -335,7 +335,7 @@ async fn test_download_repeat() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let data = client
-        .get_folders(
+        .get_remote_folders(
             &key,
             &[
                 "./测试文件夹/新建 文本文档.txt",

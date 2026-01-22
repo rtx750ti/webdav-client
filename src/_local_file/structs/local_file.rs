@@ -6,6 +6,7 @@ use reqwest::Client;
 use std::fmt;
 use std::sync::Arc;
 
+#[derive(Clone)]
 pub struct LocalFile {
     data: Arc<LocalFileData>,
     http_client: Client,
@@ -52,5 +53,9 @@ impl LocalFile {
 
     pub fn get_data(&self) -> Arc<LocalFileData> {
         self.data.clone()
+    }
+
+    pub fn get_reactive_state(&self) -> LocalFileProperty {
+        self.reactive_state.clone()
     }
 }
